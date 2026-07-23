@@ -1,69 +1,67 @@
 # Literature AI Agent
 
-## 项目目标
+一个用于文献检索与分析的 Python 项目原型。
 
-开发一个简单的文献分析 AI Agent。
+## 当前已实现
 
-用户输入研究关键词后，系统执行：
+- 项目基础 `src` 目录结构
+- OpenAlex Works API 论文采集
+- OpenAlex `abstract_inverted_index` 摘要还原
+- DOI 标准化与去重
+- 原始 API 响应保存到 `data/raw`
+- 清洗结果保存到 `data/processed`
+- 清洗结果同时输出 JSON 和 CSV
+- 命令行参数校验
+- pytest 测试，测试中不访问真实网络
 
-1. 调用 OpenAlex API 检索论文；
-2. 获取标题、DOI、摘要、作者、单位和发表日期；
-3. 按 DOI 去重；
-4. 调用大语言模型分析研究方向和技术路线；
-5. 根据公司产品表推荐可能相关的服务；
-6. 生成邮件草稿；
-7. 邮件只保存为草稿，不自动发送。
+## 当前未实现
 
-## 第一版不做
-
-- 不抓取非开放获取全文；
-- 不猜测缺失的作者邮箱；
-- 不自动发送邮件；
-- 不自动连续跟进；
-- 不训练或微调大模型；
-- 不使用复杂的多 Agent 架构。
-
-## 技术选择
-
-- Python 3.11
-- requests
-- pandas
-- SQLite
+- Crossref
+- LLM
 - Streamlit
-- OpenAlex API
-- LLM API
+- 数据库
+- 邮箱生成或发送
+- 作者邮箱猜测
 
-## 输入
+## 安装
 
-- 检索关键词
-- 起始日期
-- 结束日期
-- 最大论文数量
+使用当前虚拟环境：
 
-## 输出
+```powershell
+.\literature_env\Scripts\python.exe -m pip install -r requirements.txt
+.\literature_env\Scripts\python.exe -m pip install -e .
+```
 
-- OpenAlex ID
-- DOI
-- 标题
-- 摘要
-- 作者
-- 单位
-- 发表日期
-- AI研究方向分析
-- 技术路线
-- 潜在需求
-- 匹配产品
-- 邮件草稿
+## 运行 OpenAlex 采集
 
-## 开发顺序
+`max-results` 第一版最大为 20。
 
-1. 初始化项目；
-2. 接入 OpenAlex；
-3. 保存原始 JSON；
-4. 数据清洗和 DOI 去重；
-5. 接入 Crossref；
-6. 接入 LLM；
-7. 产品匹配；
-8. 邮件草稿；
-9. Streamlit 页面；
-10. 人工审核功能。
+```powershell
+.\literature_env\Scripts\python.exe -m literature_agent.main `
+  --query "genome assembly" `
+  --from-date 2024-01-01 `
+  --to-date 2024-12-31 `
+  --max-results 10
+```
+
+输出文件会写入：
+
+- `data/raw`
+- `data/processed`
+
+文件名会包含检索关键词和时间戳。
+
+## 运行测试
+
+```powershell
+.\literature_env\Scripts\python.exe -m pytest
+```
+
+## 安全与数据规则
+
+- 不在代码中保存密码或 API Key
+- `.env` 不提交到 Git
+- 原始 API 响应先保存，再清洗
+- DOI 优先去重；没有 DOI 时使用 OpenAlex ID 去重
+- 不猜测缺失的作者邮箱
+- 不自动发送邮件
