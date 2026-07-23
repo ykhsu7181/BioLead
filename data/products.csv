@@ -1,0 +1,6 @@
+product_name,keywords,applicable_scenarios,problems_solved
+植物基因组组装,"genome assembly,HiFi,ONT,Hi-C","新物种或复杂植物基因组","提高基因组组装连续性和完整性"
+基因结构注释,"genome annotation,MAKER,RNA-seq","已经完成基因组组装的物种","预测和优化基因结构"
+泛基因组分析,"pangenome,structural variation,SV","多个品种或多个个体","分析核心基因和结构变异"
+转录组分析,"RNA-seq,transcriptome,differential expression","基因表达研究","识别差异表达基因和相关通路"
+群体遗传分析,"population genomics,GWAS,SNP","群体样本和育种材料","分析群体结构和遗传变异"
