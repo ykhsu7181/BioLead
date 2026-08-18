@@ -1,13 +1,13 @@
-import csv
+﻿import csv
 import json
 from pathlib import Path
 
-from literature_agent.storage import (
+from scholarlead_agent.storage import (
     build_output_paths,
     save_processed_records,
     save_raw_response,
 )
-from literature_agent.works import PaperRecord
+from scholarlead_agent.works import PaperRecord
 
 
 def test_save_raw_and_processed_outputs(tmp_path: Path) -> None:
@@ -45,3 +45,4 @@ def test_save_raw_and_processed_outputs(tmp_path: Path) -> None:
     assert rows[0]["doi"] == "10.1000/abc"
     assert rows[0]["authors"] == "Alice; Bob"
     assert rows[0]["institutions"] == "Institute A"
+

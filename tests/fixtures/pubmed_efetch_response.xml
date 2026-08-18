@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE" Owner="NLM">
+      <PMID Version="1">12345678</PMID>
+      <Article PubModel="Print-Electronic">
+        <Journal>
+          <JournalIssue>
+            <PubDate>
+              <Year>2024</Year>
+              <Month>Jan</Month>
+              <Day>15</Day>
+            </PubDate>
+          </JournalIssue>
+          <Title>Journal of Genome Biology</Title>
+        </Journal>
+        <ArticleTitle>Single-cell RNA sequencing in cancer biology</ArticleTitle>
+        <ELocationID EIdType="doi">doi:10.1000/ABC</ELocationID>
+        <Abstract>
+          <AbstractText Label="BACKGROUND">Single-cell sequencing helps resolve tumor heterogeneity.</AbstractText>
+          <AbstractText Label="METHODS">We profiled cancer samples with single-cell RNA sequencing.</AbstractText>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Smith</LastName>
+            <ForeName>John</ForeName>
+            <Initials>J</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Biology, Example University, Boston, MA, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Chen</LastName>
+            <ForeName>Alice</ForeName>
+            <Initials>A</Initials>
+            <AffiliationInfo>
+              <Affiliation>Genome Center, Example Institute, Shanghai, China.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <PublicationTypeList>
+          <PublicationType>Journal Article</PublicationType>
+          <PublicationType>Research Support, Non-U.S. Gov't</PublicationType>
+        </PublicationTypeList>
+      </Article>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName>Neoplasms</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName>Single-Cell Analysis</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+      <KeywordList>
+        <Keyword>single-cell RNA sequencing</Keyword>
+        <Keyword>cancer</Keyword>
+      </KeywordList>
+    </MedlineCitation>
+    <PubmedData>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">12345678</ArticleId>
+        <ArticleId IdType="doi">https://doi.org/10.1000/ABC</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+  <PubmedArticle>
+    <MedlineCitation Status="Publisher" Owner="NLM">
+      <PMID Version="1">87654321</PMID>
+      <Article PubModel="Electronic">
+        <Journal>
+          <JournalIssue>
+            <PubDate>
+              <Year>2023</Year>
+            </PubDate>
+          </JournalIssue>
+          <Title>Plant Genomics Reports</Title>
+        </Journal>
+        <ArticleTitle>Genome assembly resources for crop research</ArticleTitle>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <CollectiveName>Crop Genome Consortium</CollectiveName>
+          </Author>
+        </AuthorList>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>

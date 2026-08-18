@@ -1,9 +1,9 @@
-import json
+﻿import json
 from pathlib import Path
 from typing import Any
 
-from literature_agent.main import main
-from literature_agent.works import SearchParams
+from scholarlead_agent.main import main
+from scholarlead_agent.works import SearchParams
 
 
 class FakeOpenAlexClient:
@@ -33,7 +33,7 @@ def test_main_collects_and_writes_outputs(
     capsys,
     monkeypatch,
 ) -> None:
-    monkeypatch.setattr("literature_agent.main.OpenAlexClient", FakeOpenAlexClient)
+    monkeypatch.setattr("scholarlead_agent.main.OpenAlexClient", FakeOpenAlexClient)
 
     exit_code = main(
         [
@@ -73,3 +73,4 @@ def test_main_collects_and_writes_outputs(
     processed_data = json.loads(processed_json_files[0].read_text(encoding="utf-8"))
     assert processed_data[0]["doi"] == "10.1000/abc"
     assert processed_data[0]["abstract"] == "CLI abstract"
+

@@ -1,4 +1,4 @@
-"""Command-line entry point for Literature Agent."""
+﻿"""Command-line entry point for ScholarLead Agent."""
 
 from __future__ import annotations
 
@@ -6,20 +6,22 @@ import argparse
 from pathlib import Path
 from typing import Sequence
 
-from literature_agent.config import load_config
-from literature_agent.openalex_client import OpenAlexClient
-from literature_agent.storage import (
+from scholarlead_agent.config import load_config
+from scholarlead_agent.openalex_client import OpenAlexClient
+from scholarlead_agent.storage import (
     build_output_paths,
     save_processed_records,
     save_raw_response,
 )
-from literature_agent.works import clean_works_response, validate_search_inputs
+from scholarlead_agent.works import clean_works_response, validate_search_inputs
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the command-line argument parser."""
 
-    parser = argparse.ArgumentParser(description="Collect papers from OpenAlex Works.")
+    parser = argparse.ArgumentParser(
+        description="Collect scholarly leads with ScholarLead Agent."
+    )
     parser.add_argument("--query", required=True, help="Search keyword.")
     parser.add_argument("--from-date", required=True, help="Start date in YYYY-MM-DD.")
     parser.add_argument("--to-date", required=True, help="End date in YYYY-MM-DD.")
@@ -82,3 +84,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

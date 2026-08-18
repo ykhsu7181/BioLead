@@ -1,11 +1,11 @@
-from typing import Any
+﻿from typing import Any
 
 import pytest
 import requests
 
-from literature_agent.config import AppConfig
-from literature_agent.openalex_client import OpenAlexClient
-from literature_agent.works import SearchParams
+from scholarlead_agent.config import AppConfig
+from scholarlead_agent.openalex_client import OpenAlexClient
+from scholarlead_agent.works import SearchParams
 
 
 class FakeResponse:
@@ -33,7 +33,7 @@ class FakeSession:
 
 def test_fetch_works_uses_openalex_parameters_and_headers() -> None:
     session = FakeSession([FakeResponse(200, {"results": []})])
-    config = AppConfig(openalex_user_agent="LiteratureAgent tests")
+    config = AppConfig(openalex_user_agent="ScholarLeadAgent tests")
     client = OpenAlexClient(config=config, session=session, retry_delay_seconds=0)
 
     result = client.fetch_works(
@@ -50,7 +50,7 @@ def test_fetch_works_uses_openalex_parameters_and_headers() -> None:
     call = session.calls[0]
     assert call["url"] == "https://api.openalex.org/works"
     assert call["timeout"] == 30
-    assert call["headers"]["User-Agent"] == "LiteratureAgent tests"
+    assert call["headers"]["User-Agent"] == "ScholarLeadAgent tests"
     assert call["params"]["search"] == "genome"
     assert call["params"]["per-page"] == 5
     assert call["params"]["filter"] == (
@@ -103,3 +103,4 @@ def test_fetch_works_raises_after_retry_limit() -> None:
         )
 
     assert len(session.calls) == 4
+

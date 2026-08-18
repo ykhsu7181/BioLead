@@ -1,4 +1,4 @@
-"""File storage helpers for raw and processed OpenAlex data."""
+﻿"""File storage helpers for raw and processed OpenAlex data."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from literature_agent.works import PaperRecord, records_to_dicts
+from scholarlead_agent.works import PaperRecord, records_to_dicts
 
 
 @dataclass(frozen=True)
@@ -101,3 +101,4 @@ def _safe_filename_part(value: str) -> str:
     safe_value = re.sub(r"[^\w-]+", "_", value.strip(), flags=re.UNICODE)
     safe_value = safe_value.strip("_")[:50]
     return safe_value or "search"
+

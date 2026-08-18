@@ -1,4 +1,4 @@
-"""Business rules for cleaning OpenAlex works."""
+﻿"""Business rules for cleaning OpenAlex works."""
 
 from __future__ import annotations
 
@@ -182,3 +182,4 @@ def _unique_preserve_order(values: list[str]) -> list[str]:
         seen.add(value)
         unique_values.append(value)
     return unique_values
+

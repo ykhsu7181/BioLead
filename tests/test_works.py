@@ -1,6 +1,6 @@
-import pytest
+﻿import pytest
 
-from literature_agent.works import (
+from scholarlead_agent.works import (
     clean_works_response,
     normalize_doi,
     restore_abstract,
@@ -112,3 +112,4 @@ def test_clean_works_response_extracts_fields_and_deduplicates() -> None:
     assert second_record.openalex_id == "https://openalex.org/W3"
     assert second_record.doi is None
     assert second_record.title == "No DOI title"
+

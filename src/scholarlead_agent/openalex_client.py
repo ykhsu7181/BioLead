@@ -1,4 +1,4 @@
-"""HTTP client for the OpenAlex Works API."""
+﻿"""HTTP client for the OpenAlex Works API."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import Any
 
 import requests
 
-from literature_agent.config import AppConfig, load_config
-from literature_agent.works import SearchParams
+from scholarlead_agent.config import AppConfig, load_config
+from scholarlead_agent.works import SearchParams
 
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -64,3 +64,4 @@ class OpenAlexClient:
             time.sleep(self.retry_delay_seconds)
 
         raise RuntimeError("OpenAlex request failed after retries")
+

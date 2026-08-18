@@ -29,3 +29,11 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/raw/pubmed/
+!data/raw/pubmed/.gitkeep
+data/raw/pubmed/*
+!data/raw/pubmed/.gitkeep
+!data/processed/pubmed/
+!data/processed/pubmed/.gitkeep
+data/processed/pubmed/*
+!data/processed/pubmed/.gitkeep

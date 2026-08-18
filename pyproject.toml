@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "literature-agent"
+name = "scholarlead-agent"
 version = "0.1.0"
-description = "A first prototype scaffold for a literature analysis agent."
+description = "A research lead discovery agent for scholarly customer prospecting."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [project.scripts]
-literature-agent = "literature_agent.main:main"
+scholarlead-agent = "scholarlead_agent.main:main"
+scholarlead-pubmed = "scholarlead_agent.pubmed_main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
