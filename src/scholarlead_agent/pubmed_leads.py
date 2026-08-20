@@ -17,7 +17,7 @@ from scholarlead_agent.pubmed_models import (
 EMAIL_PATTERN = re.compile(
     r"(?<![A-Za-z0-9._%+-])"
     r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})"
-    r"(?![A-Za-z0-9._%+-])"
+    r"(?![A-Za-z0-9_%+-])"
 )
 EMAIL_TOKEN_PATTERN = re.compile(r"[^\s,;()<>]+@[^\s,;()<>]+")
 

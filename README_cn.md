@@ -146,6 +146,16 @@ data/processed/pubmed/pubmed_run_report_{query}_{timestamp}.json
 
 `pubmed_papers_*.csv` 是论文结果表。`pubmed_leads_*.csv` 是候选客户线索表。`pubmed_run_report_*.json` 记录输入、数量统计、文件路径、状态和错误。
 
+## 运行轻量 Streamlit 界面
+
+安装依赖后，在项目根目录运行：
+
+```powershell
+.\literature_env\Scripts\python.exe -m streamlit run src\scholarlead_agent\ui\streamlit_app.py
+```
+
+页面复用 CLI 相同的 PubMed Service。点击运行按钮会真实访问 PubMed，第一次建议把 `max_results` 设为 `3` 或 `5`。
+
 ## 临时评分说明
 
 当前评分是 PubMed 单源临时评分：
@@ -194,3 +204,4 @@ official_scoring_status = pending_multi_source_data
 - `pubmed_stage13_processed_export.md`
 - `pubmed_stage14_run_report.md`
 - `pubmed_stage15_end_to_end_cli.md`
+- `pubmed_stage18_streamlit_ui.md`

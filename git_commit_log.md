@@ -48,3 +48,35 @@ Notes:
 
 - Generated files under `data/raw/pubmed` and `data/processed/pubmed` are ignored except `.gitkeep`.
 - No LLM, Agent Loop, database, Streamlit UI, or email sending is included in this commit.
+
+## 2026-08-20
+
+### 2026-08-20 14:43:23 +08:00
+
+Planned commit message:
+
+```text
+Add PubMed Streamlit UI and email extraction fix
+```
+
+Main content:
+
+- Add PubMed stage 17 full regression report.
+- Add lightweight Streamlit UI for PubMed first-round search, result display, lead detail view, run report view, and file downloads.
+- Add UI helper tests for summary, paper rows, lead rows, and lead filters.
+- Add Streamlit dependency and README / README_cn launch instructions.
+- Fix PubMed affiliation email extraction when an email is followed by a sentence-final period.
+- Add regression test for sentence-final email extraction.
+
+Verification:
+
+```text
+.\literature_env\Scripts\python.exe -m pytest
+117 passed
+```
+
+Notes:
+
+- Streamlit UI reuses the existing PubMed service entry point.
+- No LLM, Agent Loop, database, or real email sending is added.
+- The local requirement PDF is not included in this commit.

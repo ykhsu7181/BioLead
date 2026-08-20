@@ -66,6 +66,14 @@ def test_extract_valid_emails_from_text_normalizes_and_deduplicates() -> None:
     assert emails == ["john.smith@example.edu"]
 
 
+def test_extract_valid_emails_from_text_accepts_sentence_final_period() -> None:
+    emails = extract_valid_emails_from_text(
+        "Stanford University, Stanford, CA, USA. slqi@stanford.edu."
+    )
+
+    assert emails == ["slqi@stanford.edu"]
+
+
 def test_is_valid_email_rejects_incomplete_email() -> None:
     assert is_valid_email("alice@example.edu") is True
     assert is_valid_email("alice@example") is False

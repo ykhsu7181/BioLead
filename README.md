@@ -146,6 +146,16 @@ data/processed/pubmed/pubmed_run_report_{query}_{timestamp}.json
 
 `pubmed_papers_*.csv` contains paper-level records. `pubmed_leads_*.csv` contains candidate researcher/customer leads. `pubmed_run_report_*.json` records inputs, counts, file paths, status, and errors.
 
+## Run Lightweight Streamlit UI
+
+After installing dependencies, run from the project root:
+
+```powershell
+.\literature_env\Scripts\python.exe -m streamlit run src\scholarlead_agent\ui\streamlit_app.py
+```
+
+The UI reuses the same PubMed service as the CLI. Clicking the run button makes real PubMed requests, so start with a small `max_results` value such as `3` or `5`.
+
 ## Temporary Scoring Notice
 
 The current score is a PubMed-only temporary score:
@@ -194,3 +204,4 @@ Detailed planning and stage documents are in `docs/`, including:
 - `pubmed_stage13_processed_export.md`
 - `pubmed_stage14_run_report.md`
 - `pubmed_stage15_end_to_end_cli.md`
+- `pubmed_stage18_streamlit_ui.md`
