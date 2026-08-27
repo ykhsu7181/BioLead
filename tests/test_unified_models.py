@@ -1,5 +1,6 @@
 from scholarlead_agent.unified_models import (
     EvidenceRecord,
+    SourceMetadata,
     UnifiedContact,
     UnifiedFunding,
     UnifiedOrganization,
@@ -39,6 +40,27 @@ def test_evidence_record_to_dict_has_required_fields() -> None:
         "raw_record_path": None,
         "note": "candidate lead",
     }
+
+
+def test_source_metadata_to_dict_has_required_stage38_fields() -> None:
+    metadata = SourceMetadata(
+        source_name="europe_pmc",
+        source_record_id="123",
+        source_url="https://example.org/123",
+        raw_file_path="data/raw/europe_pmc/123.json",
+        collected_at="2026-08-27T10:00:00",
+        parser_version="parser-v1",
+        converter_version="converter-v1",
+        confidence="high",
+        license_or_terms_note="Public API terms documented.",
+        rate_limit_note="Respect documented API limits.",
+    )
+
+    data = metadata.to_dict()
+
+    assert data["source_name"] == "europe_pmc"
+    assert data["source_record_id"] == "123"
+    assert data["license_or_terms_note"] == "Public API terms documented."
 
 
 def test_unified_models_are_serializable_shells() -> None:

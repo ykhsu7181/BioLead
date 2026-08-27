@@ -4,28 +4,40 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
+from scholarlead_agent.api.dependencies import get_database
 from scholarlead_agent.api.errors import ApiError, api_success
 from scholarlead_agent.api.schemas.result_package import CreateResultPackageRequest
+from scholarlead_agent.result_package import build_result_package_from_database_task
 
 
 router = APIRouter(prefix="/api/result-packages", tags=["result-packages"])
 
 
 @router.post("")
-def create_result_package(request: CreateResultPackageRequest) -> dict[str, object]:
-    # Stage 34B exposes the API boundary only. Building from a task id requires
-    # the Stage 33 PubMedRunResult object or a later ResultPackage application
-    # service that can reconstruct it from persisted artifacts.
-    raise ApiError(
-        "RESULT_PACKAGE_CREATE_NOT_READY",
-        (
-            "Result Package creation from task_id is reserved for the "
-            "application service layer; use Stage 33 service directly for now."
-        ),
-        501,
+def create_result_package(
+    request: CreateResultPackageRequest,
+    connection=Depends(get_database),
+) -> dict[str, object]:
+    try:
+        package = build_result_package_from_database_task(
+            connection,
+            task_id=request.task_id,
+            output_dir=request.output_dir or "data/processed/result_packages",
+        )
+    except ValueError as error:
+        raise ApiError("RESULT_PACKAGE_TASK_NOT_FOUND", str(error), 404) from error
+    return api_success(
+        {
+            "package_id": package.package_id,
+            "task_id": package.task_id,
+            "status": package.status,
+            "package_dir": str(package.paths.package_dir),
+            "workbook_path": str(package.paths.workbook_xlsx),
+            "row_counts": package.row_counts,
+        }
     )
 
 

@@ -327,6 +327,22 @@ It is limited to approved drafts and configured test/allowed recipients. The
 project still does not register a `send_email` Agent Tool and does not support
 unattended or batch outreach.
 
+Stage 35 adds batch email draft generation for persisted leads. Stage 36 adds
+batch review and controlled batch send boundaries. The safest send mode is
+`permission_check`, which records blockers and does not call an email provider.
+`test_recipient` and `real_recipient` modes require backend configuration and
+permission checks.
+
+Stage 37 upgrades Result Package export to v2. The package now includes
+`email_reviews.csv`, `email_send_logs.csv`, and `README.txt`, and
+`POST /api/result-packages` can build an export package from a persisted
+database `task_id`.
+
+Stage 38 defines the adapter specification for future data sources. New sources
+must provide client, parser, service, tool adapter, unified converter, raw
+storage, processed export, mocked tests, run report, and source metadata before
+being exposed through Agent tools or frontend workflows.
+
 ## Temporary Scoring Notice
 
 The current score is a PubMed-only temporary score:
@@ -413,6 +429,10 @@ Detailed planning and stage documents are in `docs/`, including:
 - `pubmed_stage34_background_job_foundation.md`
 - `pubmed_stage34a_api_boundary_design.md`
 - `pubmed_stage34c_vue_frontend_skeleton.md`
+- `pubmed_stage35_batch_email_drafts.md`
+- `pubmed_stage36_batch_review_send.md`
+- `pubmed_stage37_result_package_v2.md`
+- `pubmed_stage38_data_source_adapter_spec.md`
 
 
 

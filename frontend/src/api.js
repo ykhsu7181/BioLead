@@ -24,6 +24,24 @@ export function getHealth() {
   return request("/api/health");
 }
 
+export function runPubMedSearch(payload) {
+  return request("/api/pubmed/search", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function createResultPackage(payload) {
+  return request("/api/result-packages", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getResultPackageDownloadUrl(packageId) {
+  return `${API_BASE_URL}/api/result-packages/${encodeURIComponent(packageId)}/download`;
+}
+
 export function listLeads() {
   return request("/api/leads?page=1&page_size=50");
 }
@@ -34,6 +52,28 @@ export function getLead(leadId) {
 
 export function getLeadServiceMatch(leadId) {
   return request(`/api/leads/${encodeURIComponent(leadId)}/service-match`);
+}
+
+export function listEmailDrafts() {
+  return request("/api/email-drafts?page=1&page_size=50");
+}
+
+export function batchReviewEmailDrafts(payload) {
+  return request("/api/email-drafts/batch-review", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function batchSendEmailDrafts(payload) {
+  return request("/api/email-sends/batch-send", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function listEmailSends() {
+  return request("/api/email-sends?page=1&page_size=50");
 }
 
 export function createJob(payload) {

@@ -7,6 +7,28 @@ from typing import Any
 
 
 @dataclass(frozen=True)
+class SourceMetadata:
+    """Required source-level metadata for every external data record."""
+
+    source_name: str
+    source_record_id: str
+    source_url: str
+    raw_file_path: str | None
+    collected_at: str
+    parser_version: str
+    converter_version: str
+    confidence: str
+    license_or_terms_note: str
+    rate_limit_note: str | None = None
+    access_restriction_note: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert metadata to a serializable dictionary."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class EvidenceRecord:
     """Traceable evidence for one normalized field."""
 

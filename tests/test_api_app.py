@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
 
@@ -8,11 +9,14 @@ from scholarlead_agent.api.app import create_app
 from scholarlead_agent.api.dependencies import get_database
 from scholarlead_agent.background_jobs import JOB_TYPE_BATCH_DRAFT
 from scholarlead_agent.database import (
+    insert_email_draft,
     initialize_database,
     insert_pubmed_lead,
     insert_task,
 )
+from scholarlead_agent.ai.email_drafts import EmailDraftInput, build_email_draft
 from scholarlead_agent.pubmed_models import PubMedLead
+from scholarlead_agent.pubmed_models import PubMedAuthor, PubMedPaper
 
 
 def make_lead(**overrides):
@@ -43,6 +47,53 @@ def make_lead(**overrides):
     }
     values.update(overrides)
     return PubMedLead(**values)
+
+
+def make_paper() -> PubMedPaper:
+    return PubMedPaper(
+        source="pubmed",
+        pmid="1",
+        doi="10.1000/example",
+        title="Single-cell RNA sequencing in cancer",
+        abstract="A cancer single-cell RNA sequencing study.",
+        journal="Example Journal",
+        publication_date="2026-01-01",
+        publication_year=2026,
+        article_types=["Journal Article"],
+        mesh_terms=[],
+        keywords=["single-cell", "cancer"],
+        authors=[
+            PubMedAuthor(
+                full_name="Alice Smith",
+                last_name="Smith",
+                fore_name="Alice",
+                initials="AS",
+                author_position=1,
+                is_last_author=True,
+                affiliations=["Example University, USA. alice@example.edu"],
+            )
+        ],
+        affiliations=["Example University, USA. alice@example.edu"],
+        source_url="https://pubmed.ncbi.nlm.nih.gov/1/",
+        raw_record_path="data/raw/pubmed/test.xml",
+    )
+
+
+@dataclass(frozen=True)
+class FakePubMedRunResult:
+    task_id: str
+    status: str
+    search_params: object
+    pmids: list[str]
+    papers: list[PubMedPaper]
+    leads: list[PubMedLead]
+    raw_files: dict[str, str]
+    processed_files: dict[str, str]
+    run_report_path: Path
+    run_report: dict[str, object]
+    errors: list[dict[str, str]]
+    started_at: str
+    finished_at: str
 
 
 def make_client(db_path: Path) -> TestClient:
@@ -137,6 +188,139 @@ def test_api_leads_and_tasks_read_persisted_database_rows(tmp_path: Path) -> Non
     assert lead.json()["data"]["payload"]["pi_full_name"] == "Alice Smith"
     assert task.json()["data"]["query"] == "single-cell cancer"
     assert task_leads.json()["data"]["total"] == 1
+
+
+def test_api_email_draft_review_and_send_boundaries(tmp_path: Path) -> None:
+    db_path = tmp_path / "api.sqlite"
+    with initialize_database(db_path) as connection:
+        insert_pubmed_lead(connection, make_lead())
+        draft = build_email_draft(
+            evidence=EmailDraftInput(
+                lead_id="lead-1",
+                pi_full_name="Alice Smith",
+                recent_publication_title="Single-cell RNA sequencing in cancer",
+                source_url="https://pubmed.ncbi.nlm.nih.gov/1/",
+                target_service_type="single-cell RNA sequencing",
+                verified_email="alice@example.edu",
+                email_status="verified_from_pubmed_affiliation",
+            ),
+            subject="Question about your single-cell cancer study",
+            body="Dear Dr. Smith,\n\nI read your paper.\n\nBest regards,",
+            model_name="fake-model",
+            generated_at="2026-08-27T10:00:00",
+        )
+        insert_email_draft(connection, draft, draft_id="draft-1")
+    client = make_client(db_path)
+
+    drafts = client.get("/api/email-drafts")
+    review = client.post(
+        "/api/email-drafts/batch-review",
+        json={"draft_ids": ["draft-1"], "reviewer": "Reviewer", "decision": "approve"},
+    )
+    send = client.post(
+        "/api/email-sends/batch-send",
+        json={
+            "draft_ids": ["draft-1"],
+            "actor": "Reviewer",
+            "mode": "permission_check",
+            "max_items": 1,
+        },
+    )
+    logs = client.get("/api/email-sends")
+
+    assert drafts.json()["data"]["total"] == 1
+    assert review.json()["data"]["reviewed_count"] == 1
+    assert send.json()["data"]["blocked_count"] == 1
+    assert logs.json()["data"]["total"] == 1
+    assert logs.json()["data"]["items"][0]["status"] == "blocked"
+
+
+def test_api_pubmed_search_runs_service_and_persists_results(tmp_path: Path, monkeypatch) -> None:
+    db_path = tmp_path / "api.sqlite"
+    client = make_client(db_path)
+    calls = []
+
+    def fake_run_pubmed_search(params):
+        calls.append(params)
+        return FakePubMedRunResult(
+            task_id="pubmed-api-test",
+            status="success",
+            search_params=params,
+            pmids=["1"],
+            papers=[make_paper()],
+            leads=[make_lead()],
+            raw_files={"efetch_xml": "data/raw/pubmed/test.xml"},
+            processed_files={"papers_csv": "data/processed/pubmed/papers.csv"},
+            run_report_path=tmp_path / "run_report.json",
+            run_report={
+                "task_id": "pubmed-api-test",
+                "status": "success",
+                "papers_count": 1,
+                "leads_count": 1,
+            },
+            errors=[],
+            started_at="2026-08-27T10:00:00",
+            finished_at="2026-08-27T10:00:01",
+        )
+
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.pubmed.run_pubmed_search",
+        fake_run_pubmed_search,
+    )
+
+    response = client.post(
+        "/api/pubmed/search",
+        json={
+            "query": "single-cell cancer",
+            "from_date": "2026-01-01",
+            "to_date": "2026-12-31",
+            "max_results": 1,
+            "service_type": "single-cell RNA sequencing",
+        },
+    )
+
+    with initialize_database(db_path) as connection:
+        task = connection.execute(
+            "SELECT * FROM tasks WHERE task_id = ?",
+            ("pubmed-api-test",),
+        ).fetchone()
+        leads = connection.execute("SELECT * FROM leads").fetchall()
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["task_id"] == "pubmed-api-test"
+    assert data["papers"][0]["title"] == "Single-cell RNA sequencing in cancer"
+    assert data["leads"][0]["lead_id"] == "lead-1"
+    assert calls[0].query == "single-cell cancer"
+    assert task is not None
+    assert len(leads) == 1
+
+
+def test_api_creates_result_package_from_database_task(tmp_path: Path) -> None:
+    db_path = tmp_path / "api.sqlite"
+    output_dir = tmp_path / "packages"
+    with initialize_database(db_path) as connection:
+        insert_task(
+            connection,
+            task_id="task-1",
+            task_type="pubmed",
+            status="success",
+            query="single-cell cancer",
+            parameters={"from_date": "2026-01-01", "to_date": "2026-12-31", "max_results": 1},
+        )
+        insert_pubmed_lead(connection, make_lead(), task_id="task-1")
+    client = make_client(db_path)
+
+    response = client.post(
+        "/api/result-packages",
+        json={"task_id": "task-1", "output_dir": str(output_dir)},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["package_id"] == "TASK_task_1"
+    assert data["row_counts"]["customers"] == 1
+    assert (output_dir / "TASK_task_1" / "email_send_logs.csv").exists()
 
 
 def test_api_error_format_is_consistent(tmp_path: Path) -> None:

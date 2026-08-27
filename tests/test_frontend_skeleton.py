@@ -52,3 +52,35 @@ def test_frontend_keeps_secrets_and_external_services_out_of_browser_code() -> N
 
     for term in forbidden_terms:
         assert term not in source
+
+
+def test_frontend_exposes_batch_email_review_and_send_controls() -> None:
+    app = (FRONTEND / "src" / "App.vue").read_text(encoding="utf-8")
+    api = (FRONTEND / "src" / "api.js").read_text(encoding="utf-8")
+
+    assert "/api/email-drafts/batch-review" in api
+    assert "/api/email-sends/batch-send" in api
+    assert "批准所选草稿" in app
+    assert "permission_check" in app
+
+
+def test_frontend_exposes_pubmed_search_and_result_tables() -> None:
+    app = (FRONTEND / "src" / "App.vue").read_text(encoding="utf-8")
+    api = (FRONTEND / "src" / "api.js").read_text(encoding="utf-8")
+
+    assert "/api/pubmed/search" in api
+    assert "PubMed 检索" in app
+    assert "运行 PubMed 检索" in app
+    assert "论文结果" in app
+    assert "候选 PI / Leads" in app
+
+
+def test_frontend_exposes_result_package_generation_and_download() -> None:
+    app = (FRONTEND / "src" / "App.vue").read_text(encoding="utf-8")
+    api = (FRONTEND / "src" / "api.js").read_text(encoding="utf-8")
+
+    assert "/api/result-packages" in api
+    assert "/download" in api
+    assert "生成结果包" in app
+    assert "下载 Excel" in app
+    assert "generateResultPackage" in app

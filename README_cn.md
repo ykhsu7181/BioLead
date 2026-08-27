@@ -302,3 +302,82 @@ SMTP、SQLite，也不保存任何 API Key 或邮箱密码。
 
 - `pubmed_stage34a_api_boundary_design.md`
 - `pubmed_stage34c_vue_frontend_skeleton.md`
+- `pubmed_stage35_batch_email_drafts.md`
+- `pubmed_stage36_batch_review_send.md`
+- `pubmed_stage37_result_package_v2.md`
+- `pubmed_stage38_data_source_adapter_spec.md`
+
+## 阶段 35 / 36：批量邮件草稿、审核和受控发送
+
+阶段 35 已增加批量邮件草稿生成能力，基于数据库中已有的客户线索生成
+待人工审核的邮件草稿。
+
+阶段 36 已增加批量审核和受控发送入口。默认推荐先使用：
+
+```text
+permission_check
+```
+
+这个模式只检查是否允许发送并记录原因，不会真的调用邮箱服务。
+
+另外还有：
+
+```text
+test_recipient
+real_recipient
+```
+
+这两个模式必须依赖后端 `.env` 中的邮箱配置和权限检查。前端不会保存
+邮箱密码或 API Key。
+
+## 阶段 37：Result Package v2
+
+阶段 37 已把最终导出包升级到 v2。现在导出包会包含：
+
+```text
+customers.csv
+papers.csv
+funding.csv
+evidence.csv
+service_matches.csv
+email_drafts.csv
+email_reviews.csv
+email_send_logs.csv
+task_summary.json
+README.txt
+scholarlead_results.xlsx
+```
+
+FastAPI 的接口也可以根据数据库中的 `task_id` 生成结果包：
+
+```text
+POST /api/result-packages
+```
+
+## 阶段 38：新增数据源 Adapter 规范
+
+阶段 38 没有直接接入新的真实数据源，而是规定以后接入 Europe PMC、
+bioRxiv、medRxiv、Semantic Scholar、ORCID、机构官网等来源时必须走统一结构：
+
+```text
+Client
+Parser
+Service
+Tool Adapter
+Unified Converter
+Raw Storage
+Processed Export
+Mocked Tests
+Run Report
+Source Metadata
+```
+
+核心代码：
+
+```text
+src/scholarlead_agent/data_source_adapter.py
+src/scholarlead_agent/unified_models.py
+```
+
+新增数据源不能绕过 raw 保存、EvidenceRecord、测试，也不能让 LLM 猜邮箱、
+基金、身份或机构国家。
