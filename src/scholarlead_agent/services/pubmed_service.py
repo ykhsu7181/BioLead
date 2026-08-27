@@ -51,14 +51,19 @@ class PubMedRunResult:
 
     task_id: str
     status: str
+    search_params: PubMedSearchParams
     pmids: list[str]
     papers: list[PubMedPaper]
     leads: list[PubMedLead]
     raw_paths: PubMedRawOutputPaths
     processed_paths: PubMedProcessedOutputPaths
+    raw_files: dict[str, str]
+    processed_files: dict[str, str]
     run_report_path: Path
     run_report: dict[str, Any]
     errors: list[dict[str, str]]
+    started_at: str
+    finished_at: str
 
 
 def run_pubmed_search(
@@ -123,6 +128,7 @@ def run_pubmed_search(
         return _build_run_result(
             task_id=run_task_id,
             status=status,
+            search_params=params,
             pmids=pmids,
             papers=papers,
             leads=leads,
@@ -161,6 +167,7 @@ def run_pubmed_search(
         return _build_run_result(
             task_id=run_task_id,
             status=status,
+            search_params=params,
             pmids=pmids,
             papers=papers,
             leads=leads,
@@ -216,6 +223,7 @@ def run_pubmed_search(
     return _build_run_result(
         task_id=run_task_id,
         status=status,
+        search_params=params,
         pmids=pmids,
         papers=papers,
         leads=leads,
@@ -300,6 +308,7 @@ def _build_run_result(
     *,
     task_id: str,
     status: str,
+    search_params: PubMedSearchParams,
     pmids: list[str],
     papers: list[PubMedPaper],
     leads: list[PubMedLead],
@@ -312,14 +321,19 @@ def _build_run_result(
     return PubMedRunResult(
         task_id=task_id,
         status=status,
+        search_params=search_params,
         pmids=pmids,
         papers=papers,
         leads=leads,
         raw_paths=raw_paths,
         processed_paths=processed_paths,
+        raw_files=_string_dict(run_report.get("raw_files", {})),
+        processed_files=_string_dict(run_report.get("processed_files", {})),
         run_report_path=run_report_path,
         run_report=run_report,
         errors=errors,
+        started_at=str(run_report.get("started_at") or ""),
+        finished_at=str(run_report.get("finished_at") or ""),
     )
 
 
@@ -329,3 +343,9 @@ def _build_error(stage: str, error: Exception) -> dict[str, str]:
         "type": error.__class__.__name__,
         "message": str(error),
     }
+
+
+def _string_dict(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): str(item) for key, item in value.items()}

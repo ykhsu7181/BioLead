@@ -24,6 +24,10 @@ build/
 dist/
 *.egg-info/
 
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+
 # Generated data
 data/raw/*
 data/processed/*

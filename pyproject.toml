@@ -11,11 +11,14 @@ requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31",
     "streamlit>=1.36",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]
 scholarlead-agent = "scholarlead_agent.main:main"
 scholarlead-pubmed = "scholarlead_agent.pubmed_main:main"
+scholarlead-db = "scholarlead_agent.database_main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

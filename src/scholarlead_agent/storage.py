@@ -20,6 +20,7 @@ class OutputPaths:
     raw_json: Path
     processed_json: Path
     processed_csv: Path
+    request_meta_json: Path | None = None
 
 
 def build_output_paths(
@@ -38,6 +39,7 @@ def build_output_paths(
         raw_json=raw_dir / f"{base_name}_raw.json",
         processed_json=processed_dir / f"{base_name}_processed.json",
         processed_csv=processed_dir / f"{base_name}_processed.csv",
+        request_meta_json=raw_dir / f"{base_name}_request_meta.json",
     )
 
 
@@ -57,6 +59,99 @@ def save_processed_records(records: list[PaperRecord], paths: OutputPaths) -> No
     json_content = json.dumps(records_as_dicts, ensure_ascii=False, indent=2)
     _write_text_atomically(paths.processed_json, json_content)
     _write_records_csv(records, paths.processed_csv)
+
+
+def build_openalex_request_meta(
+    *,
+    query: str,
+    from_date: str,
+    to_date: str,
+    max_results: int,
+    paths: OutputPaths,
+    collected_at: str | None = None,
+    status: str = "success",
+    errors: list[str] | None = None,
+) -> dict[str, Any]:
+    """Build metadata describing one OpenAlex raw collection attempt."""
+
+    return {
+        "source": "openalex",
+        "query": query,
+        "from_date": from_date,
+        "to_date": to_date,
+        "max_results": max_results,
+        "collected_at": collected_at or datetime.now().isoformat(timespec="seconds"),
+        "status": status,
+        "raw_files": {"raw_json": str(paths.raw_json)},
+        "errors": errors or [],
+    }
+
+
+def save_openalex_request_meta(meta: dict[str, Any], path: Path | None) -> None:
+    """Save OpenAlex request metadata as JSON when a path is available."""
+
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_text_atomically(path, json.dumps(meta, ensure_ascii=False, indent=2))
+
+
+def build_openalex_run_report_path(
+    query: str,
+    processed_dir: Path,
+    timestamp: str | None = None,
+) -> Path:
+    """Build a run report path for one OpenAlex run."""
+
+    safe_query = _safe_filename_part(query)
+    run_timestamp = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return processed_dir / f"openalex_run_report_{safe_query}_{run_timestamp}.json"
+
+
+def build_openalex_run_report(
+    *,
+    query: str,
+    from_date: str,
+    to_date: str,
+    max_results: int,
+    task_id: str,
+    records: list[PaperRecord],
+    raw_files: OutputPaths | dict[str, Any] | None,
+    processed_files: OutputPaths | dict[str, Any] | None,
+    errors: list[dict[str, Any] | str] | None = None,
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    status: str = "success",
+) -> dict[str, Any]:
+    """Build an auditable OpenAlex run report."""
+
+    return {
+        "task_id": task_id,
+        "source": "openalex",
+        "query": query,
+        "from_date": from_date,
+        "to_date": to_date,
+        "max_results": max_results,
+        "work_count": len(records),
+        "unified_paper_count": len(records),
+        "raw_files": _paths_to_dict(raw_files, include_request_meta=True),
+        "processed_files": _paths_to_dict(processed_files),
+        "errors": _normalize_report_errors(errors),
+        "started_at": started_at,
+        "finished_at": finished_at or datetime.now().isoformat(timespec="seconds"),
+        "status": status,
+        "queried_sources": ["openalex"],
+        "lead_generation_status": "not_enabled_in_stage21c",
+        "scoring_status": "not_enabled_in_stage21c",
+        "email_status": "not_enabled_in_stage21c",
+    }
+
+
+def save_openalex_run_report(report: dict[str, Any], path: Path) -> None:
+    """Save an OpenAlex run report as JSON."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_text_atomically(path, json.dumps(report, ensure_ascii=False, indent=2))
 
 
 def _write_records_csv(records: list[PaperRecord], path: Path) -> None:
@@ -89,6 +184,52 @@ def _write_records_csv(records: list[PaperRecord], path: Path) -> None:
             )
 
     temp_path.replace(path)
+
+
+def _paths_to_dict(
+    paths: Any,
+    *,
+    include_request_meta: bool = False,
+) -> dict[str, str]:
+    if paths is None:
+        return {}
+    if isinstance(paths, dict):
+        return {
+            str(key): str(value)
+            for key, value in paths.items()
+            if value is not None and str(value)
+        }
+
+    field_names = ["raw_json", "processed_json", "processed_csv"]
+    if include_request_meta:
+        field_names.append("request_meta_json")
+
+    path_values: dict[str, str] = {}
+    for field_name in field_names:
+        value = getattr(paths, field_name, None)
+        if value is not None:
+            path_values[field_name] = str(value)
+    return path_values
+
+
+def _normalize_report_errors(
+    errors: list[dict[str, Any] | str] | None,
+) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+    for error in errors or []:
+        if isinstance(error, dict):
+            normalized.append(
+                {
+                    "stage": str(error.get("stage") or "unknown"),
+                    "type": str(error.get("type") or "unknown"),
+                    "message": str(error.get("message") or ""),
+                }
+            )
+            continue
+        normalized.append(
+            {"stage": "unknown", "type": "unknown", "message": str(error)}
+        )
+    return normalized
 
 
 def _write_text_atomically(path: Path, content: str) -> None:
