@@ -1,6 +1,19 @@
 # Git Commit Log
 
-This file records project git commits, timestamps, and the main content of each commit.
+Status: Historical Development Notes
+
+This file is no longer the authoritative Git history.
+
+Authoritative commit history:
+
+```text
+git log
+GitHub repository commit history
+```
+
+This document contains manually recorded development notes from earlier project stages and may not include all later commits.
+
+The sections below are kept as historical notes.
 
 ## Existing History
 

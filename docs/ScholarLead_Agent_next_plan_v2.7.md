@@ -1,5 +1,14 @@
 # ScholarLead Agent 下一步开发计划（v2.7 修正版）
 
+> 执行状态：Completed
+>
+> 本计划规划的 Stage 30-38 已完成第一轮实现。
+>
+> 本文档继续保留，用于记录 Stage 30-38 的设计依据、依赖关系和实施顺序。
+>
+> Stage 39 及后续开发不再以本文档作为当前 next-plan。
+> 后续请参考：`docs/ScholarLead_Agent_next_plan_v2.8.md`。
+
 版本：v2.7-revised  
 日期：2026-08-26  
 项目：ScholarLead Agent  

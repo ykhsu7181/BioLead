@@ -1,5 +1,16 @@
 # ScholarLead Agent 项目开发计划书
 
+> 文档状态：Historical / Superseded
+>
+> 本文档创建于 2026-08-17，反映项目早期规划，不再用于判断当前项目完成度。
+>
+> 当前项目状态请参考：
+> - `AGENTS.md` / `AGENT_cn.md`
+> - `docs/current_project_status.md`
+> - `docs/feature_acceptance_matrix.md`
+>
+> 当前后续开发计划请参考最新 next-plan 文档：`docs/ScholarLead_Agent_next_plan_v2.8.md`。
+
 版本：v0.2  
 日期：2026-08-17
 

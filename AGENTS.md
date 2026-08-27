@@ -4,66 +4,97 @@ This file defines development rules for Codex and other AI coding assistants wor
 
 ## Project Mission
 
-ScholarLead Agent is an overseas scientific customer discovery system. It should help users move from research keywords or natural-language intent to structured scientific leads, evidence-backed scoring, customer analysis, exportable reports, and eventually human-reviewed academic outreach.
+ScholarLead Agent, also referred to as BioLead in planning documents, is an evidence-first scientific lead discovery and outreach workflow prototype. It helps users move from research keywords or natural-language intent to public scientific evidence, structured lead records, scoring signals, service matching, reviewed email drafts, controlled sending, and auditable exports.
 
-The long-term business workflow is:
+The long-term workflow is:
 
 ```text
 user query
-→ search task
-→ public scientific data collection
-→ raw data preservation
-→ cleaning and normalization
-→ researcher / PI identification
-→ entity deduplication
-→ paper / funding / institution / email enrichment
-→ lead scoring
-→ customer prioritization
-→ customer analysis
-→ personalized email draft
-→ human review
-→ confirmed sending
-→ follow-up / reporting / export
+-> Agent / task
+-> public scientific data collection
+-> raw data preservation
+-> cleaning and normalization
+-> unified models and evidence records
+-> researcher / organization / lead identification
+-> scoring
+-> company service matching
+-> personalized email draft
+-> human review
+-> controlled send boundary
+-> result package / report / export
 ```
 
 Do not optimize one isolated module in a way that damages this full workflow.
 
-## Current Development Strategy
+## Current Project Baseline
 
-Build deterministic tools first, then add Agent orchestration.
+Current implementation baseline: Stage 38.
 
-Preferred sequence:
+Existing architecture includes:
+
+- PubMed / Crossref / OpenAlex / NIH RePORTER integrations.
+- Unified models and evidence records.
+- Researcher, organization, contact, paper, funding, and lead structures.
+- ToolRegistry and bounded Agent Loop.
+- OpenAI-compatible model adapter.
+- Conversation / task context.
+- SQLite persistence foundation.
+- Company Service Catalog and ServiceMatcher.
+- SenderProfile.
+- Personalized email draft generation.
+- Human review and controlled send boundaries.
+- SMTP test-send provider.
+- Batch email draft, review, and controlled batch send workflow.
+- Background job foundation.
+- FastAPI backend.
+- Vue frontend.
+- Streamlit prototype UI.
+- Result Package v2.
+- Data Source Adapter specification.
+
+PubMed remains the current primary lead-discovery path. Other sources are present as first-version integrations or supporting evidence sources, not complete production-grade data products.
+
+## Source of Truth Priority
+
+When project documents disagree, use this order:
+
+1. Explicit current user instruction.
+2. `AGENTS.md` / `AGENT_cn.md`.
+3. `docs/current_project_status.md`.
+4. `docs/feature_acceptance_matrix.md`.
+5. `README.md` / `README_cn.md`.
+6. Current next-plan document.
+7. Stage implementation documents.
+8. Superseded historical planning documents.
+
+Stage documents describe historical implementation decisions and must not be used alone to infer the current project state. Historical or superseded planning documents must not be used as the current development entry point.
+
+## No Duplicate Subsystems
+
+Do not create a second implementation of an existing subsystem.
+
+Before adding a new module, verify whether an equivalent implementation already exists under:
 
 ```text
-official data API
-→ raw response storage
-→ normalized records
-→ provenance
-→ tests
-→ business rules
-→ workflow integration
-→ optional LLM/Agent layer
+src/scholarlead_agent/
+frontend/
+docs/
+tests/
 ```
 
-The first real module already implemented is OpenAlex paper collection. The recommended next main workflow is PubMed.
+Extend the current architecture unless the user explicitly approves replacement.
 
-Do not introduce LLMs, Streamlit, database storage, Crossref, or email sending unless the user explicitly asks for that phase.
+Avoid duplicate versions of:
 
-## Source of Truth
-
-Project decisions should follow:
-
-- `README.md`
-- documents under `docs/`
-- the detailed overseas Agent requirements and acceptance criteria
-- explicit user instructions in the current conversation
-
-If requirements conflict:
-
-1. Do not silently change the requirement.
-2. Record the conflict.
-3. Prefer configurable implementation.
-4. Ask for confirmation when the business rule is ambiguous.
+- Agent Loop.
+- ToolRegistry.
+- SQLite/database layer.
+- Email review and sending workflow.
+- FastAPI app.
+- Vue frontend shell.
+- ServiceMatcher.
+- Result package generation.
+- Data source adapter pattern.
 
 ## Python Rules
 
@@ -84,6 +115,7 @@ If requirements conflict:
 - Never commit `.env`.
 - Keep only placeholder values in `.env.example`.
 - Do not log secrets.
+- Do not expose real recipient lists, customer emails, or model keys in documentation examples.
 
 ## Data Rules
 
@@ -108,201 +140,70 @@ retrieved_at
 
 ## Data Source Architecture
 
-External scientific data sources should be implemented through separate adapters or clearly separated client modules.
-
-Recommended interface concept:
+External scientific data sources should follow the Stage 38 adapter direction:
 
 ```text
-search()
-fetch_detail()
-normalize()
-health_check()
+Client
+Parser
+Service
+Tool Adapter
+Unified Converter
+Raw Storage
+Processed Export
+Mocked Tests
+Run Report
+Source Metadata
+EvidenceRecord
 ```
 
-Business logic should not depend directly on one third-party API JSON shape.
+Business logic must not depend directly on one third-party API JSON shape.
 
-Every external API integration should handle:
+Do not:
 
-- timeout
-- retries
-- rate limits
-- pagination
-- empty responses
-- HTTP errors
-- malformed responses
-- schema changes where practical
+- Call external scientific APIs directly from Vue.
+- Call external scientific APIs directly from a FastAPI route without a service layer.
+- Skip raw storage.
+- Skip `EvidenceRecord` when evidence is used downstream.
+- Feed raw external fields directly into email generation without normalization.
+- Register a new Agent Tool without mocked tests.
+- Use an LLM to guess emails, grants, identities, institutions, or countries.
 
-Errors must be observable and traceable. A later API failure must not delete already saved raw or processed data.
-
-## Current OpenAlex Rules
-
-OpenAlex collection must:
-
-- use a clear User-Agent
-- use a 30-second timeout
-- retry 429 and 5xx responses up to 3 times
-- limit first-version `max_results` to 20
-- restore `abstract_inverted_index`
-- normalize DOI by trimming spaces, removing `https://doi.org/`, and lowercasing
-- deduplicate by DOI first
-- deduplicate by OpenAlex ID when DOI is missing
-- save raw responses under `data/raw`
-- save processed JSON and CSV under `data/processed`
-- avoid real network calls in tests
-
-## Researcher and Customer Rules
-
-Do not merge researchers by name alone.
-
-Entity matching should consider multiple signals:
-
-- normalized name
-- ORCID
-- email
-- institution
-- publication overlap
-- funding records
-- public profile URL
-
-Deduplication status should support:
-
-```text
-merged
-probable_match
-manual_review_required
-distinct
-```
-
-When confidence is insufficient, require manual confirmation.
+Every external API integration should handle timeout, retries, rate limits, pagination, empty responses, HTTP errors, malformed responses, and practical schema changes. A later API failure must not delete already saved raw or processed data.
 
 ## Email Rules
 
-Finding an email address and proving who owns it are separate tasks.
+The system supports controlled email workflows through draft generation, human review, permission checks, and logged sending. It does not support unattended Agent-driven outreach.
 
-Email-to-person matching must preserve evidence:
+Important boundaries:
 
-```text
-email
-→ researcher
-→ evidence
-→ source
-```
-
-Never assign an email to a customer based only on weak proximity in HTML, PDF, or plain text.
-
-Do not implement automatic email sending unless the user explicitly asks for the sending phase.
-
-Any future email workflow must be:
-
-```text
-generate draft
-→ human review
-→ optional edit
-→ explicit confirmation
-→ send
-→ record status
-```
-
-## Lead Scoring Rules
-
-Default scoring dimensions:
-
-- Funding Activity: 40%
-- Research Direction Match: 30%
-- Publication Recency: 20%
-- Outsourcing Tendency: 10%
-
-Default priority:
-
-- High: score >= 80
-- Medium: 50 <= score <= 79
-- Low: score < 50
-
-Weights and thresholds must be centralized and configurable.
-
-Core numerical scoring should be deterministic and reproducible. LLMs may summarize evidence or explain scores, but they should not be the sole calculator of final numerical scores.
-
-## LLM and Agent Rules
-
-LLM features should be added only after the deterministic data pipeline is reliable.
-
-When added, keep LLM code separate from:
-
-- data-source clients
-- normalization
-- storage
-- deterministic scoring
-
-Use a provider abstraction rather than binding the project to one model vendor.
-
-Conceptual interface:
-
-```text
-generate()
-model_name
-usage
-estimated_cost
-```
-
-Track token usage and estimated cost for each AI call when LLM functionality is introduced.
+- No Agent-accessible `send_email` tool is registered.
+- Agents may generate or prepare drafts, but must not send emails autonomously.
+- Real sending must pass explicit user/human action and permission policy checks.
+- Batch sending must keep limits, idempotency, status logs, and failure records.
+- Missing emails must remain missing. Do not infer or fabricate contact addresses.
 
 ## Testing Rules
 
-Add or update tests for meaningful functional changes.
+- Add or update tests for every behavioral change.
+- Tests for external APIs must mock HTTP and must not access the real network.
+- Keep regression tests for existing PubMed, Crossref, OpenAlex, NIH RePORTER, Agent, database, email, API, and frontend behavior.
+- Run the relevant focused tests first, then full regression when a change can affect shared behavior.
 
-Data-source tests should cover:
+Current full regression command:
 
-- successful response
-- empty response
-- API error
-- timeout
-- retry behavior
-- pagination when applicable
-- normalization
-- provenance fields
-
-Tests must not call real external APIs unless a specific real-integration test is explicitly requested.
-
-Before reporting a task complete:
-
-- run relevant tests
-- report modified files
-- report test results
-- report known limitations
-- state whether real API testing was performed
+```powershell
+.\literature_env\Scripts\python.exe -m pytest
+```
 
 ## Documentation Rules
 
-Update `README.md` when user-visible behavior changes.
+After each completed stage, update:
 
-Put detailed planning material in `docs/`, not in the README.
+- `docs/current_project_status.md`
+- `docs/feature_acceptance_matrix.md`
 
-README should stay focused on:
+Update `README.md` / `README_cn.md` when user-visible behavior changes.
 
-- what the project is
-- what is currently implemented
-- what is not implemented
-- how to install
-- how to run
-- how to test
-- important safety/data rules
+Do not rewrite Stage 1-38 implementation documents unless there is a factual error, file corruption, or obvious encoding issue. They are historical implementation records.
 
-Use UTF-8 for Markdown files. Avoid rewriting Chinese Markdown through tools that corrupt encoding.
-
-## Definition of Done
-
-A module is not complete just because code runs.
-
-A feature is complete only when it has:
-
-```text
-code
-+ tests
-+ error handling
-+ provenance where applicable
-+ configuration where required
-+ documentation
-+ realistic validation
-```
-
-If only mocked tests were run, say so clearly.
+The current development entry point after Stage 38 is `docs/ScholarLead_Agent_next_plan_v2.8.md`.
