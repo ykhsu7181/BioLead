@@ -3,8 +3,8 @@
 Version: v1.0  
 Date: 2026-08-27  
 Branch: main  
-Current Stage: Email-E8 completed
-Next Entry Point: Email draft benchmark expansion and reviewer revision history
+Current Stage: Stage 39 implementation complete, real acceptance retest pending
+Next Entry Point: Rerun the bounded real PubMed Agent smoke test after the execution limit update
 
 ## 1. Current Baseline
 
@@ -54,14 +54,15 @@ Vue frontend / Streamlit prototype
 - AI usage logging.
 - Background job foundation.
 - FastAPI API boundary.
-- Vue frontend skeleton with PubMed search and result package download.
+- FastAPI Agent natural-language API bridge with idempotent result persistence.
+- Vue frontend with PubMed search, result package download, and Agent API entry.
 - Streamlit prototype UI.
 - Result Package v2.
 - Data Source Adapter specification.
 
 ## 4. Partially Implemented
 
-- Vue frontend: basic shell and selected workflows are present; not all Streamlit workflows are fully migrated.
+- Vue frontend: basic shell and selected workflows are present; Agent dialog now uses the FastAPI Agent API, while not all Streamlit workflows are fully migrated.
 - Multi-source entity resolution: conservative first version exists; production-grade merging still needs stronger matching and review.
 - Official scoring: minimal evidence-backed draft exists; production scoring still needs confirmed business rules and richer evidence.
 - Email operations: test/controlled sending exists; production provider operations, deliverability, unsubscribe handling, suppression management, and campaign governance are not complete.
@@ -109,9 +110,9 @@ Stage implementation documents record what was true at that stage. They are not 
 
 ## 8. Next Development Entry Point
 
-Current Stage: Email-E8 completed
-Current specialized next step: Email draft benchmark expansion and reviewer revision history
-Current specialized plan: `docs/ScholarLead_Agent_email_draft_improvement_plan_v2.9.md`
+Current Stage: Stage 39 implementation complete, real acceptance retest pending.
+Current specialized next step: Rerun the bounded real PubMed Agent smoke test after the execution limit update.
+Current specialized plan: `docs/BioLead_Stage39_Agent_Natural_Language_API_Bridge_Codex.md`
 Main roadmap: `docs/ScholarLead_Agent_next_plan_v2.8.md`
 
-Stage 39A-lite and Email-E1 through Email-E8 are complete. Their records are `docs/stage39a_project_audit.md`, `docs/email_e1_draft_chain_audit.md`, `docs/email_e2_sender_capability_catalog.md`, `docs/email_e3_capability_matcher.md`, `docs/email_e4_email_draft_input_v2.md`, `docs/email_e5_academic_cold_email_prompt_v2.md`, `docs/email_e6_draft_quality_validator.md`, `docs/email_e7_batch_draft_reviewer_workspace.md`, and `docs/email_e8_quality_benchmark_e2e.md`. Email-E8 adds a versioned 20-case offline acceptance benchmark and a controlled no-provider end-to-end test. A real-model quality comparison requires an explicitly selected frozen model, budget, and human rubric; it is not represented as a completed offline test.
+Stage 39A-lite and Email-E1 through Email-E8 are complete. Their records are `docs/stage39a_project_audit.md`, `docs/email_e1_draft_chain_audit.md`, `docs/email_e2_sender_capability_catalog.md`, `docs/email_e3_capability_matcher.md`, `docs/email_e4_email_draft_input_v2.md`, `docs/email_e5_academic_cold_email_prompt_v2.md`, `docs/email_e6_draft_quality_validator.md`, `docs/email_e7_batch_draft_reviewer_workspace.md`, and `docs/email_e8_quality_benchmark_e2e.md`. Stage 39 implementation, Mock verification, frontend build, and full regression are complete. The first real PubMed Agent smoke test exposed that the model requested `max_results=10`; Agent execution now applies a generic `ToolContext(max_results_limit=5)` cap, and one final bounded real smoke test is pending before formal acceptance. No email send tool has been added.

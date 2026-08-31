@@ -41,7 +41,8 @@
 | 正式四维评分 | 开发中 | 已有最小证据版草案，仍需正式业务规则确认 |
 | Company Service Catalog | 已完成第一版 | 公司业务范围结构化配置已实现 |
 | ServiceMatcher | 已完成第一版 | 可基于论文信息匹配业务服务 |
-| Agent Loop | 已完成第一版 | 已有有限轮次 Agent Loop |
+| Agent Loop | 已完成第一版 | 已有有限轮次 Agent Loop、对话上下文与 Stage 39 API Bridge |
+| Agent 自然语言 API Bridge | 开发中 / 待真实复测 | `/api/agent/run`、幂等持久化、本轮 Lead 返回、Vue 最小入口和通用 Tool 执行上限已实现；需用实际 Tool 参数 `max_results <= 5` 完成最后一次真实小范围 PubMed 验收 |
 | ToolRegistry | 已完成 | 已注册检索和草稿相关工具 |
 | Conversation Context | 已完成基础版 | 支持最小对话 / 任务上下文 |
 | AI 邮件草稿 | 已完成第一版 / 待专项增强 | 可生成英文邮件草稿，用于人工审核；Email-E1 审计已完成，后续将接入 Sender Capability Catalog、CapabilityMatcher 和自动质量检查 |
@@ -56,8 +57,8 @@
 | Agent 自动发送 | 明确不支持 | 当前没有 Agent 可调用的 `send_email` 工具 |
 | Result Package v2 | 已完成 | 支持导出可审计结果包 |
 | Streamlit | 已完成原型 | 原型页面仍可使用 |
-| FastAPI | 已完成基础版 | 已有 API boundary 和核心路由 |
-| Vue | 已完成骨架 / 开发中 | 已迁移 PubMed 检索、结果展示和结果包下载等基础能力 |
+| FastAPI | 已完成基础版 | 已有 API boundary、核心路由和 Agent 自然语言执行入口 |
+| Vue | 已完成骨架 / 开发中 | 已迁移 PubMed 检索、结果展示、结果包下载和最小 Agent 对话入口 |
 | Background Job | 已完成基础版 | 已有后台任务基础 |
 | Data Source Adapter | 已完成规范 | Stage 38 已定义新增数据源接入标准 |
 | CRM | 待开发 | 销售跟进闭环尚未实现 |
@@ -105,4 +106,4 @@
 
 截至 Stage 38，项目已经完成第一版科研线索发现、证据记录、邮件草稿、受控发送、结果包和前后端骨架。
 
-下一步开发应从 Stage 39 开始，在现有架构上增强业务闭环、Vue 功能迁移、生产级邮件治理、多源数据源扩展和 CRM/跟进能力。
+下一步可继续 Vue 功能迁移、生产级邮件治理、多源数据源扩展和 CRM/跟进能力，并以产品优先级确定实施顺序。

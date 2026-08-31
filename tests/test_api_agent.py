@@ -9,6 +9,7 @@ from scholarlead_agent.agent.loop import AgentRunResult, AgentToolExecution
 from scholarlead_agent.agent.tool_types import ToolResult
 from scholarlead_agent.api.app import create_app
 from scholarlead_agent.api.dependencies import get_database
+from scholarlead_agent.config import AppConfig
 from scholarlead_agent.database import initialize_database
 from scholarlead_agent.services.agent_result_persistence import persist_agent_run_result
 from tests.test_agent_result_persistence import make_run_result
@@ -33,6 +34,11 @@ def test_api_agent_run_persists_leads_and_caches_idempotent_result(
     client = make_client(db_path)
     source_result = make_run_result(tmp_path)
     calls: list[str] = []
+
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.agent.load_config",
+        lambda: AppConfig(agent_max_results_limit=5),
+    )
 
     def fake_run_agent_conversation(message: str, **kwargs: object):
         calls.append(message)
@@ -105,6 +111,64 @@ def test_api_agent_run_persists_leads_and_caches_idempotent_result(
     assert data["artifacts"][0]["name"] == "pubmed_run_report.json"
     assert second.json()["data"] == data
     assert lead.status_code == 200
+
+
+def test_api_agent_uses_configured_max_results_limit(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path / "api.sqlite")
+    received_limits: list[int | None] = []
+
+    def fake_run_agent_conversation(message: str, **kwargs: object):
+        context = kwargs["context"]
+        received_limits.append(getattr(context, "max_results_limit"))
+        return (
+            "conv-config-test",
+            AgentRunResult(final_answer="No tool needed.", messages=[], turns=1),
+            TaskContext(conversation_id="conv-config-test"),
+        )
+
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.agent.load_config",
+        lambda: AppConfig(agent_max_results_limit=17),
+    )
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.agent.run_agent_conversation",
+        fake_run_agent_conversation,
+    )
+
+    response = client.post("/api/agent/run", json={"message": "Explain the workflow."})
+
+    assert response.status_code == 200
+    assert received_limits == [17]
+
+
+def test_api_agent_passes_default_max_results_limit_to_tool_context(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    client = make_client(tmp_path / "api.sqlite")
+    received_limits: list[int | None] = []
+
+    def fake_run_agent_conversation(message: str, **kwargs: object):
+        received_limits.append(getattr(kwargs["context"], "max_results_limit"))
+        return (
+            "conv-default-config-test",
+            AgentRunResult(final_answer="No tool needed.", messages=[], turns=1),
+            TaskContext(conversation_id="conv-default-config-test"),
+        )
+
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.agent.load_config",
+        lambda: AppConfig(),
+    )
+    monkeypatch.setattr(
+        "scholarlead_agent.api.routers.agent.run_agent_conversation",
+        fake_run_agent_conversation,
+    )
+
+    response = client.post("/api/agent/run", json={"message": "Explain the workflow."})
+
+    assert response.status_code == 200
+    assert received_limits == [50]
 
 
 def test_api_agent_rejects_empty_message_with_safe_error(tmp_path: Path) -> None:

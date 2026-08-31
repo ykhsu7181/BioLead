@@ -73,7 +73,7 @@ def run_agent(
             conversation_id=conversation_id,
             max_turns=max_turns,
             database_path=str(config.database_path),
-            context=ToolContext(max_results_limit=5),
+            context=ToolContext(max_results_limit=config.agent_max_results_limit),
         )
     except LLMConfigError as error:
         _mark_failed(connection, idempotency_key)

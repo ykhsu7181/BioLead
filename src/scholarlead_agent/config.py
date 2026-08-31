@@ -41,6 +41,7 @@ class AppConfig:
     openai_model: str | None = None
     openai_fallback_model: str | None = None
     agent_default_model: str | None = None
+    agent_max_results_limit: int = 50
     email_draft_default_model: str | None = None
     ai_usage_dir: Path = Path("data/processed/ai_usage")
     email_audit_dir: Path = Path("data/processed/email_audit")
@@ -64,6 +65,14 @@ class AppConfig:
     smtp_password: str | None = None
     smtp_use_ssl: bool = True
     smtp_timeout_seconds: int = 30
+
+    def __post_init__(self) -> None:
+        if (
+            isinstance(self.agent_max_results_limit, bool)
+            or not isinstance(self.agent_max_results_limit, int)
+            or self.agent_max_results_limit <= 0
+        ):
+            raise ValueError("agent_max_results_limit must be a positive integer")
 
 
 def load_config() -> AppConfig:
@@ -117,6 +126,10 @@ def load_config() -> AppConfig:
         openai_model=os.getenv("OPENAI_MODEL") or None,
         openai_fallback_model=os.getenv("OPENAI_FALLBACK_MODEL") or None,
         agent_default_model=os.getenv("AGENT_DEFAULT_MODEL") or None,
+        agent_max_results_limit=_positive_int_env(
+            "AGENT_MAX_RESULTS_LIMIT",
+            default=50,
+        ),
         email_draft_default_model=os.getenv("EMAIL_DRAFT_DEFAULT_MODEL") or None,
         ai_usage_dir=Path(os.getenv("AI_USAGE_DIR", "data/processed/ai_usage")),
         email_audit_dir=Path(
@@ -188,6 +201,21 @@ def _optional_int_env(name: str) -> int | None:
     if value is None or not value.strip():
         return None
     return int(value)
+
+
+def _positive_int_env(name: str, *, default: int) -> int:
+    """Read one required positive integer setting with a default."""
+
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise ValueError(f"{name} must be a positive integer") from error
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return parsed
 
 
 def _optional_float_env(name: str) -> float | None:
