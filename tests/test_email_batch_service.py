@@ -162,6 +162,29 @@ def test_batch_generate_email_drafts_persists_drafts_and_job(tmp_path: Path) -> 
     assert job["job_type"] == "BatchDraftJob"
 
 
+def test_batch_regeneration_creates_a_new_version_without_overwriting_history(tmp_path: Path) -> None:
+    with initialize_database(tmp_path / "batch.sqlite") as connection:
+        insert_pubmed_lead(connection, make_lead("lead-1"))
+        service = FakeDraftService()
+        first = generate_batch_email_drafts(
+            connection,
+            lead_ids=["lead-1"],
+            service=service,
+            job_id="job-drafts-1",
+        )
+        second = generate_batch_email_drafts(
+            connection,
+            lead_ids=["lead-1"],
+            service=service,
+            job_id="job-drafts-2",
+        )
+        drafts = fetch_all(connection, "SELECT * FROM email_drafts ORDER BY draft_id")
+
+    assert first.draft_ids == ["draft-lead-1"]
+    assert second.draft_ids == ["draft-lead-1-v2"]
+    assert [row["draft_id"] for row in drafts] == ["draft-lead-1", "draft-lead-1-v2"]
+
+
 def test_batch_review_updates_drafts_and_records_audit(tmp_path: Path) -> None:
     with initialize_database(tmp_path / "batch.sqlite") as connection:
         insert_pubmed_lead(connection, make_lead("lead-1"))

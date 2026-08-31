@@ -175,8 +175,14 @@ def generate_batch_email_drafts(
         try:
             draft = draft_service.generate_for_lead(lead_by_id[item.lead_id])
             draft_data = email_draft_to_dict(draft)
-            draft_id = f"draft-{item.lead_id}"
+            draft_id, draft_version, supersedes_draft_id = _next_draft_identity(
+                connection,
+                item.lead_id,
+            )
             draft_data["draft_id"] = draft_id
+            draft_data["draft_version"] = draft_version
+            if supersedes_draft_id:
+                draft_data["supersedes_draft_id"] = supersedes_draft_id
             insert_email_draft(connection, draft_data, draft_id=draft_id)
             complete_job_item(
                 connection,
@@ -433,6 +439,28 @@ def _lead_from_row(row: sqlite3.Row) -> PubMedLead:
 
 def _fetch_draft_row(connection: sqlite3.Connection, draft_id: str) -> sqlite3.Row | None:
     return fetch_one(connection, "SELECT * FROM email_drafts WHERE draft_id = ?", (draft_id,))
+
+
+def _next_draft_identity(
+    connection: sqlite3.Connection,
+    lead_id: str,
+) -> tuple[str, str, str | None]:
+    """Return a new draft identity so batch regeneration never overwrites history."""
+
+    base_id = f"draft-{lead_id}"
+    rows = fetch_all(
+        connection,
+        "SELECT draft_id FROM email_drafts WHERE lead_id = ? ORDER BY created_at, draft_id",
+        (lead_id,),
+    )
+    if not rows:
+        return base_id, "v1", None
+
+    existing_ids = {str(row["draft_id"]) for row in rows}
+    version_number = 2
+    while f"{base_id}-v{version_number}" in existing_ids:
+        version_number += 1
+    return f"{base_id}-v{version_number}", f"v{version_number}", str(rows[-1]["draft_id"])
 
 
 def _draft_from_row(row: sqlite3.Row) -> dict[str, Any]:

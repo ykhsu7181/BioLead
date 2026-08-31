@@ -33,6 +33,7 @@ def test_load_sender_profile_from_json(tmp_path: Path) -> None:
     assert profile.sender_title == "Research Partnership Manager"
     assert profile.sender_organization == "Example Bio"
     assert profile.sender_email == "alex@example.com"
+    assert profile.sender_intro_style == "organization_representative"
     assert profile.source_path == str(profile_path)
 
 
@@ -66,4 +67,24 @@ def test_sender_profile_to_dict_is_evidence_safe() -> None:
     )
 
     assert data["sender_name"] == "Alex Chen"
+    assert data["sender_intro_style"] == "organization_representative"
     assert "password" not in json.dumps(data).lower()
+
+
+def test_load_sender_profile_rejects_unsupported_intro_style(tmp_path: Path) -> None:
+    profile_path = tmp_path / "sender_profile.json"
+    profile_path.write_text(
+        json.dumps(
+            {
+                "profile_version": "v1",
+                "sender_name": "Alex Chen",
+                "sender_title": "Director",
+                "sender_organization": "Example Bio",
+                "sender_intro_style": "unverified",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="sender_intro_style"):
+        load_sender_profile(profile_path)

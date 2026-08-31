@@ -58,6 +58,13 @@ export function listEmailDrafts() {
   return request("/api/email-drafts?page=1&page_size=50");
 }
 
+export function batchGenerateEmailDrafts(payload) {
+  return request("/api/email-drafts/batch-generate", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function batchReviewEmailDrafts(payload) {
   return request("/api/email-drafts/batch-review", {
     method: "POST",

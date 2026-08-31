@@ -7,11 +7,20 @@ from datetime import datetime
 import json
 from typing import Any
 
+from scholarlead_agent.capability_matching import CapabilityMatchItem
 from scholarlead_agent.pubmed_models import PubMedLead
+from scholarlead_agent.sender_profile import (
+    SENDER_INTRO_STYLE_I_LEAD,
+    SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE,
+)
 
 
 DRAFT_STATUS_REVIEW_PENDING = "review_pending"
 EMAIL_DRAFT_LANGUAGE = "en"
+DRAFT_MODE_LEGACY_SERVICE_BASED = "legacy_service_based"
+DRAFT_MODE_CAPABILITY_GROUNDED = "capability_grounded"
+DRAFT_MODE_PAPER_ONLY = "paper_only"
+EMAIL_DRAFT_PROMPT_VERSION_V2 = "academic_cold_email_v2"
 
 
 @dataclass(frozen=True)
@@ -22,7 +31,7 @@ class EmailDraftInput:
     pi_full_name: str
     recent_publication_title: str
     source_url: str
-    target_service_type: str
+    target_service_type: str = ""
     abstract: str | None = None
     institution: str | None = None
     country: str | None = None
@@ -46,6 +55,17 @@ class EmailDraftInput:
     sender_profile_version: str | None = None
     sender_email: str | None = None
     sender_signature: str | None = None
+    sender_intro_style: str | None = None
+    capability_match_id: str | None = None
+    candidate_capabilities: list[CapabilityMatchItem] = field(default_factory=list)
+    capability_match_status: str | None = None
+    capability_profile_version: str | None = None
+    capability_matcher_version: str | None = None
+    paper_evidence_summary: str | None = None
+    paper_evidence_source_refs: list[str] = field(default_factory=list)
+    research_direction: str | None = None
+    draft_mode: str | None = None
+    email_prompt_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -74,16 +94,22 @@ class EmailDraft:
     can_send: bool = False
 
 
-EMAIL_DRAFT_SYSTEM_PROMPT = """You write personalized professional English outreach email drafts for ScholarLead Agent.
+EMAIL_DRAFT_SYSTEM_PROMPT = """You write one restrained English Academic Cold Email draft.
 
-Rules:
-- Use only the evidence provided by the user message.
-- Do not invent funding, grant status, experiment results, customer needs, affiliations, emails, or source links.
-- Do not say the candidate PI / corresponding author is absolutely confirmed.
-- Do not claim any email has been sent or will be sent automatically.
-- The tone must be professional, concise, and restrained.
-- The email must mention the recent publication evidence in a personalized way.
-- Return valid JSON only with exactly two string keys: subject and body.
+Hard rules:
+- Use only the evidence in the user message. Do not invent paper content, funding, experiment results, customer needs, affiliations, emails, source links, or sender capabilities.
+- Do not state that the recipient is certainly a PI or corresponding author.
+- Do not state that an email was sent or will be sent automatically.
+- Do not use sales language, quotations, pricing, sample requests, procurement requests, meeting invitations, or project proposals.
+- Return valid JSON only with exactly two non-empty string keys: subject and body.
+
+Format rules:
+- Subject: use "Academic exchange on ..." plus a specific scientific topic grounded in the paper evidence. If no specific topic is supported, use "Academic exchange on your recent research".
+- Body: start with the supplied greeting, then write three concise paragraphs and finish with the supplied signature.
+- Paragraph 1: make one concrete observation grounded in the paper title, abstract, keywords, or supplied metadata. Do not give generic praise alone.
+- Paragraph 2: follow the supplied draft mode exactly. In capability_grounded mode, refer naturally only to supplied candidate capabilities; do not list them as products. In paper_only mode, express only the supplied general scientific interest and never claim a specific sender technique, platform, service, or capability.
+- Paragraph 3: invite a low-pressure academic exchange only. Do not request a meeting or commercial action.
+- Use "I lead" only when sender_intro_style is "i_lead". Otherwise use a neutral organization-representative introduction.
 """
 
 
@@ -98,11 +124,33 @@ def validate_email_draft_input(value: EmailDraftInput) -> EmailDraftInput:
         "pi_full_name": value.pi_full_name,
         "recent_publication_title": value.recent_publication_title,
         "source_url": value.source_url,
-        "target_service_type": value.target_service_type,
     }
     for field_name, field_value in required_text.items():
         if not _clean_text(field_value):
             raise ValueError(f"{field_name} cannot be empty")
+
+    candidate_capabilities = _normalize_candidate_capabilities(
+        value.candidate_capabilities
+    )
+    capability_match_status = _clean_text(value.capability_match_status)
+    if capability_match_status == "no_match" and candidate_capabilities:
+        raise ValueError("no_match cannot include candidate capabilities")
+    if capability_match_status in {"matched", "partial_match"} and not candidate_capabilities:
+        raise ValueError(
+            f"{capability_match_status} requires candidate capabilities"
+        )
+
+    sender_intro_style = _clean_text(value.sender_intro_style)
+    if sender_intro_style and sender_intro_style not in {
+        SENDER_INTRO_STYLE_I_LEAD,
+        SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE,
+    }:
+        raise ValueError("sender_intro_style is not supported")
+
+    draft_mode = _clean_text(value.draft_mode) or _default_draft_mode(
+        capability_match_status,
+        candidate_capabilities,
+    )
 
     return EmailDraftInput(
         lead_id=_clean_text(value.lead_id) or "",
@@ -135,6 +183,23 @@ def validate_email_draft_input(value: EmailDraftInput) -> EmailDraftInput:
         sender_profile_version=_clean_text(value.sender_profile_version),
         sender_email=_clean_text(value.sender_email),
         sender_signature=_clean_text(value.sender_signature),
+        sender_intro_style=sender_intro_style,
+        capability_match_id=_clean_text(value.capability_match_id),
+        candidate_capabilities=candidate_capabilities,
+        capability_match_status=capability_match_status,
+        capability_profile_version=_clean_text(value.capability_profile_version),
+        capability_matcher_version=_clean_text(value.capability_matcher_version),
+        paper_evidence_summary=_clean_text(value.paper_evidence_summary),
+        paper_evidence_source_refs=[
+            item
+            for item in (_clean_text(ref) for ref in value.paper_evidence_source_refs)
+            if item
+        ],
+        research_direction=_clean_text(value.research_direction),
+        draft_mode=draft_mode,
+        email_prompt_version=(
+            _clean_text(value.email_prompt_version) or EMAIL_DRAFT_PROMPT_VERSION_V2
+        ),
     )
 
 
@@ -157,6 +222,17 @@ def build_email_draft_input_from_lead(
     sender_profile_version: str | None = None,
     sender_email: str | None = None,
     sender_signature: str | None = None,
+    sender_intro_style: str | None = None,
+    capability_match_id: str | None = None,
+    candidate_capabilities: list[CapabilityMatchItem] | None = None,
+    capability_match_status: str | None = None,
+    capability_profile_version: str | None = None,
+    capability_matcher_version: str | None = None,
+    paper_evidence_summary: str | None = None,
+    paper_evidence_source_refs: list[str] | None = None,
+    research_direction: str | None = None,
+    draft_mode: str | None = None,
+    email_prompt_version: str | None = None,
 ) -> EmailDraftInput:
     """Build draft evidence from an existing PubMed Lead."""
 
@@ -190,6 +266,17 @@ def build_email_draft_input_from_lead(
             sender_profile_version=sender_profile_version,
             sender_email=sender_email,
             sender_signature=sender_signature,
+            sender_intro_style=sender_intro_style,
+            capability_match_id=capability_match_id,
+            candidate_capabilities=candidate_capabilities or [],
+            capability_match_status=capability_match_status,
+            capability_profile_version=capability_profile_version,
+            capability_matcher_version=capability_matcher_version,
+            paper_evidence_summary=paper_evidence_summary,
+            paper_evidence_source_refs=paper_evidence_source_refs or [],
+            research_direction=research_direction,
+            draft_mode=draft_mode,
+            email_prompt_version=email_prompt_version,
         )
     )
 
@@ -199,10 +286,9 @@ def build_email_draft_messages(evidence: EmailDraftInput) -> list[dict[str, str]
 
     normalized = validate_email_draft_input(evidence)
     user_prompt = (
-        "Generate one English outreach email draft from this evidence only.\n"
-        "Do not include any funding claim unless funding evidence is explicitly provided; "
-        "no funding evidence is provided in this task.\n\n"
-        f"{json.dumps(build_email_draft_evidence(normalized), ensure_ascii=False, indent=2)}"
+        "Generate the email from this model-visible evidence only. "
+        "no funding evidence is provided.\n\n"
+        f"{json.dumps(_build_model_evidence(normalized), ensure_ascii=False, indent=2)}"
     )
     return [
         {"role": "system", "content": EMAIL_DRAFT_SYSTEM_PROMPT},
@@ -236,6 +322,20 @@ def build_email_draft_evidence(evidence: EmailDraftInput) -> dict[str, Any]:
             "catalog_version": normalized.service_catalog_version,
             "matcher_version": normalized.service_matcher_version,
         },
+        "capability_match": {
+            "capability_match_id": normalized.capability_match_id,
+            "status": normalized.capability_match_status,
+            "profile_version": normalized.capability_profile_version,
+            "matcher_version": normalized.capability_matcher_version,
+            "candidate_capabilities": [
+                _capability_to_dict(capability)
+                for capability in normalized.candidate_capabilities
+            ],
+        },
+        "draft_mode": normalized.draft_mode,
+        "paper_evidence_summary": normalized.paper_evidence_summary,
+        "paper_evidence_source_refs": normalized.paper_evidence_source_refs,
+        "research_direction": normalized.research_direction,
         "pubmed_source_url": normalized.source_url,
         "pmid": normalized.pmid,
         "doi": normalized.doi,
@@ -246,7 +346,9 @@ def build_email_draft_evidence(evidence: EmailDraftInput) -> dict[str, Any]:
             "profile_version": normalized.sender_profile_version,
             "sender_email": normalized.sender_email,
             "signature": normalized.sender_signature,
+            "sender_intro_style": normalized.sender_intro_style,
         },
+        "email_prompt_version": normalized.email_prompt_version,
         "funding_evidence": None,
     }
 
@@ -290,6 +392,24 @@ def parse_email_draft_model_output(content: str) -> tuple[str, str]:
     return "Potential academic collaboration", cleaned
 
 
+def parse_email_draft_model_json(content: str) -> tuple[str, str]:
+    """Parse the strict JSON response required by Academic Cold Email Prompt v2."""
+
+    cleaned = content.strip()
+    if not cleaned:
+        raise ValueError("model returned empty draft content")
+
+    parsed = _parse_json_object(cleaned)
+    if not parsed or set(parsed) != {"subject", "body"}:
+        raise ValueError("model output must be JSON with subject and body only")
+
+    subject = _clean_text(parsed.get("subject"))
+    body = _clean_text(parsed.get("body"))
+    if not subject or not body:
+        raise ValueError("model JSON subject and body cannot be empty")
+    return subject, body
+
+
 def build_email_draft(
     *,
     evidence: EmailDraftInput,
@@ -297,6 +417,9 @@ def build_email_draft(
     body: str,
     model_name: str | None,
     generated_at: str | None = None,
+    draft_status: str = DRAFT_STATUS_REVIEW_PENDING,
+    quality_report: dict[str, Any] | None = None,
+    additional_warnings: list[str] | None = None,
 ) -> EmailDraft:
     """Build the final structured draft object."""
 
@@ -308,13 +431,19 @@ def build_email_draft(
         warnings.append("missing_abstract")
     if normalized.service_match_status == "needs_review":
         warnings.append("service_match_needs_review")
+    if additional_warnings:
+        warnings.extend(additional_warnings)
+
+    draft_evidence = build_email_draft_evidence(normalized)
+    if quality_report is not None:
+        draft_evidence["quality_report"] = quality_report
 
     return EmailDraft(
         lead_id=normalized.lead_id,
         subject=subject.strip(),
         body=body.strip(),
         language=EMAIL_DRAFT_LANGUAGE,
-        draft_status=DRAFT_STATUS_REVIEW_PENDING,
+        draft_status=draft_status,
         generated_at=generated_at or datetime.now().isoformat(timespec="seconds"),
         model_name=model_name or "unknown",
         source_paper_title=normalized.recent_publication_title,
@@ -325,7 +454,7 @@ def build_email_draft(
         recipient_name=normalized.pi_full_name,
         verified_email=normalized.verified_email,
         email_status=normalized.email_status,
-        evidence=build_email_draft_evidence(normalized),
+        evidence=draft_evidence,
         warnings=warnings,
         can_send=False,
     )
@@ -353,6 +482,7 @@ def email_draft_to_dict(draft: EmailDraft) -> dict[str, Any]:
         "verified_email": draft.verified_email,
         "email_status": draft.email_status,
         "evidence": draft.evidence,
+        "quality_report": draft.evidence.get("quality_report"),
         "warnings": draft.warnings,
         "can_send": draft.can_send,
     }
@@ -381,3 +511,76 @@ def _clean_text(value: Any) -> str | None:
         value = str(value)
     cleaned = value.strip()
     return cleaned or None
+
+
+def _normalize_candidate_capabilities(
+    capabilities: list[CapabilityMatchItem],
+) -> list[CapabilityMatchItem]:
+    if not isinstance(capabilities, list):
+        raise ValueError("candidate_capabilities must be a list")
+    if any(not isinstance(item, CapabilityMatchItem) for item in capabilities):
+        raise ValueError("candidate_capabilities must contain CapabilityMatchItem values")
+    return list(capabilities)
+
+
+def _default_draft_mode(
+    capability_match_status: str | None,
+    candidate_capabilities: list[CapabilityMatchItem],
+) -> str:
+    if capability_match_status == "no_match":
+        return DRAFT_MODE_PAPER_ONLY
+    if candidate_capabilities:
+        return DRAFT_MODE_CAPABILITY_GROUNDED
+    return DRAFT_MODE_LEGACY_SERVICE_BASED
+
+
+def _capability_to_dict(capability: CapabilityMatchItem) -> dict[str, Any]:
+    return {
+        "capability_id": capability.capability_id,
+        "capability_name": capability.capability_name,
+        "match_score": capability.match_score,
+        "match_reason": capability.match_reason,
+        "matched_terms": list(capability.matched_terms),
+        "evidence": list(capability.evidence),
+    }
+
+
+def _build_model_evidence(normalized: EmailDraftInput) -> dict[str, Any]:
+    """Return the minimum evidence allowed to influence Prompt v2 wording."""
+
+    data = build_email_draft_evidence(normalized)
+    data["greeting"] = f"Dear {normalized.pi_full_name},"
+    data["sender_intro_style"] = normalized.sender_intro_style
+    data["sender_signature"] = normalized.sender_signature or _default_signature(
+        normalized
+    )
+
+    if normalized.draft_mode == DRAFT_MODE_PAPER_ONLY:
+        # Service matching is internal routing information, not sender evidence.
+        data["target_service_type"] = None
+        data["service_context"] = None
+        data["matched_service"] = None
+        data["capability_match"] = {
+            "status": "no_match",
+            "candidate_capabilities": [],
+        }
+        data["allowed_sender_interest"] = (
+            "general academic interest in the research described by the paper"
+        )
+    else:
+        data["allowed_sender_interest"] = None
+
+    return data
+
+
+def _default_signature(evidence: EmailDraftInput) -> str:
+    lines = [
+        value
+        for value in (
+            evidence.sender_name,
+            evidence.sender_title,
+            evidence.organization_name,
+        )
+        if value
+    ]
+    return "Best regards,\n" + "\n".join(lines)

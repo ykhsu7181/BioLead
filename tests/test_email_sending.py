@@ -137,6 +137,39 @@ def test_send_reviewed_email_blocks_unapproved_draft_before_provider_call() -> N
     assert provider.calls == []
 
 
+def test_send_reviewed_email_blocks_quality_failed_draft_before_provider_call() -> None:
+    provider = FakeProvider()
+    result = send_reviewed_email(
+        make_draft(draft_status="quality_failed"),
+        actor="Reviewer",
+        policy=allow_policy(),
+        provider=provider,
+        send_id="send-quality-failed",
+    )
+
+    assert result.status == "blocked"
+    assert "human_review_not_approved" in result.permission_blockers
+    assert provider.calls == []
+
+
+def test_send_reviewed_email_blocks_failed_quality_report_after_approval() -> None:
+    provider = FakeProvider()
+    draft = make_draft(
+        evidence={"quality_report": {"status": "fail", "failure_reasons": ["invalid_json"]}}
+    )
+    result = send_reviewed_email(
+        draft,
+        actor="Reviewer",
+        policy=allow_policy(),
+        provider=provider,
+        send_id="send-quality-report-failed",
+    )
+
+    assert result.status == "blocked"
+    assert "draft_quality_failed" in result.permission_blockers
+    assert provider.calls == []
+
+
 def test_send_reviewed_email_blocks_missing_verified_email_before_provider_call() -> None:
     provider = FakeProvider()
     result = send_reviewed_email(

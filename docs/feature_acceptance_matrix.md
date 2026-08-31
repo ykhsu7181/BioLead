@@ -44,8 +44,10 @@
 | Agent Loop | 已完成第一版 | 已有有限轮次 Agent Loop |
 | ToolRegistry | 已完成 | 已注册检索和草稿相关工具 |
 | Conversation Context | 已完成基础版 | 支持最小对话 / 任务上下文 |
-| AI 邮件草稿 | 已完成 | 可生成英文邮件草稿，用于人工审核 |
+| AI 邮件草稿 | 已完成第一版 / 待专项增强 | 可生成英文邮件草稿，用于人工审核；Email-E1 审计已完成，后续将接入 Sender Capability Catalog、CapabilityMatcher 和自动质量检查 |
 | SenderProfile | 已完成 | 发件人姓名、职位、机构等可固定配置 |
+| Sender Capability Catalog | 已完成第一版 | 已接入 39 项本地能力配置、版本读取、结构校验和 disabled capability 处理 |
+| CapabilityMatcher | 已完成第一版 | 基于论文 Evidence 和本地能力目录确定性选择 0-6 项能力；不调用 LLM，尚未接入草稿输入 |
 | 人工审核 | 已完成基础版 | 草稿审核状态和权限边界已实现 |
 | SMTP 测试发送 | 已完成 | 支持受控测试发送和日志记录 |
 | 批量草稿 | 已完成第一版 | 可为多条 lead 生成草稿 |

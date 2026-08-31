@@ -21,6 +21,9 @@ from scholarlead_agent.services.email_batch_service import (
     generate_batch_email_drafts,
     send_batch_reviewed_emails,
 )
+from scholarlead_agent.services.email_reviewer_workspace import (
+    build_email_reviewer_workspace,
+)
 
 
 router = APIRouter(prefix="/api", tags=["email-batches"])
@@ -126,6 +129,7 @@ def _draft_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     data = dict(row)
     payload = json.loads(data.pop("payload_json", "{}") or "{}")
     data["payload"] = payload
+    data["reviewer_workspace"] = build_email_reviewer_workspace({**payload, **data})
     return data
 
 

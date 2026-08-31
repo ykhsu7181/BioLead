@@ -345,6 +345,10 @@ EMAIL_DRAFT_FIELDS = [
     "Model_Name",
     "Generated_At",
     "Can_Send",
+    "Quality_Status",
+    "Quality_Failure_Reasons",
+    "Quality_Warnings",
+    "Quality_Validator_Version",
     "Warnings",
 ]
 
@@ -603,6 +607,13 @@ def _email_draft_rows(
     rows: list[dict[str, Any]] = []
     for draft in drafts:
         evidence = draft.get("evidence") if isinstance(draft.get("evidence"), dict) else {}
+        quality_report = (
+            draft.get("quality_report")
+            if isinstance(draft.get("quality_report"), dict)
+            else evidence.get("quality_report")
+            if isinstance(evidence.get("quality_report"), dict)
+            else {}
+        )
         matched_service = (
             evidence.get("matched_service")
             if isinstance(evidence.get("matched_service"), dict)
@@ -626,6 +637,12 @@ def _email_draft_rows(
                 "Model_Name": draft.get("model_name") or "",
                 "Generated_At": draft.get("generated_at") or "",
                 "Can_Send": draft.get("can_send"),
+                "Quality_Status": quality_report.get("status") or "",
+                "Quality_Failure_Reasons": _json_list(
+                    quality_report.get("failure_reasons") or []
+                ),
+                "Quality_Warnings": _json_list(quality_report.get("warnings") or []),
+                "Quality_Validator_Version": quality_report.get("validator_version") or "",
                 "Warnings": _json_list(draft.get("warnings") or []),
             }
         )

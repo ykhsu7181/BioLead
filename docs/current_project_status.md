@@ -3,8 +3,8 @@
 Version: v1.0  
 Date: 2026-08-27  
 Branch: main  
-Current Stage: Stage 38  
-Next Entry Point: Stage 39
+Current Stage: Email-E8 completed
+Next Entry Point: Email draft benchmark expansion and reviewer revision history
 
 ## 1. Current Baseline
 
@@ -109,8 +109,9 @@ Stage implementation documents record what was true at that stage. They are not 
 
 ## 8. Next Development Entry Point
 
-Current Stage: Stage 38  
-Next Stage: Stage 39  
-Current next-plan document: `docs/ScholarLead_Agent_next_plan_v2.8.md`
+Current Stage: Email-E8 completed
+Current specialized next step: Email draft benchmark expansion and reviewer revision history
+Current specialized plan: `docs/ScholarLead_Agent_email_draft_improvement_plan_v2.9.md`
+Main roadmap: `docs/ScholarLead_Agent_next_plan_v2.8.md`
 
-Stage 39 should extend the existing architecture. It should not reimplement PubMed, Agent Loop, ToolRegistry, SQLite, FastAPI, Vue skeleton, ServiceMatcher, email review, batch draft, result package, or data source adapter logic from scratch.
+Stage 39A-lite and Email-E1 through Email-E8 are complete. Their records are `docs/stage39a_project_audit.md`, `docs/email_e1_draft_chain_audit.md`, `docs/email_e2_sender_capability_catalog.md`, `docs/email_e3_capability_matcher.md`, `docs/email_e4_email_draft_input_v2.md`, `docs/email_e5_academic_cold_email_prompt_v2.md`, `docs/email_e6_draft_quality_validator.md`, `docs/email_e7_batch_draft_reviewer_workspace.md`, and `docs/email_e8_quality_benchmark_e2e.md`. Email-E8 adds a versioned 20-case offline acceptance benchmark and a controlled no-provider end-to-end test. A real-model quality comparison requires an explicitly selected frozen model, budget, and human rubric; it is not represented as a completed offline test.

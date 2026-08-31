@@ -1,0 +1,1287 @@
+{
+  "profile_version": "2026-08-28-sender-capabilities-v1",
+  "purpose": "Evidence-grounded sender capability catalog for Academic Cold Email capability matching.",
+  "selection_policy": {
+    "target_candidate_count": 4,
+    "max_candidate_count": 6,
+    "min_candidate_count": 0,
+    "allow_fewer_when_evidence_is_insufficient": true,
+    "zero_match_strategy": "paper_only",
+    "llm_may_create_new_capabilities": false,
+    "note": "Capabilities are grounded in verified public source materials. Matching keywords, research fields, and scientific questions are configuration aids and should not be presented as verbatim source claims."
+  },
+  "capabilities": [
+    {
+      "capability_id": "third_generation_long_read_sequencing",
+      "capability_name": "Third-generation long-read sequencing",
+      "category": "Genome sequencing",
+      "description": "Long-read sequencing capability for complex genome, structural variation, and full-length molecular analysis.",
+      "positive_keywords": [
+        "third-generation sequencing",
+        "long-read sequencing",
+        "long read",
+        "三代测序",
+        "长读长测序"
+      ],
+      "synonyms": [
+        "long-read genomics",
+        "single-molecule sequencing",
+        "三代高通量测序"
+      ],
+      "research_fields": [
+        "genomics",
+        "complex genomes",
+        "structural variation"
+      ],
+      "scientific_questions": [
+        "How can long reads resolve complex genomic regions?",
+        "How can long-read data improve genome continuity and variant discovery?"
+      ],
+      "methods": [
+        "PacBio sequencing",
+        "long-read sequencing"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "pacbio_hifi_sequencing",
+      "capability_name": "PacBio HiFi sequencing",
+      "category": "Genome sequencing",
+      "description": "High-accuracy long-read sequencing for high-quality genome assembly and complex-region analysis.",
+      "positive_keywords": [
+        "PacBio HiFi",
+        "HiFi reads",
+        "CCS",
+        "PacBio",
+        "高精度长读长"
+      ],
+      "synonyms": [
+        "HiFi sequencing",
+        "PacBio CCS",
+        "SMRT sequencing"
+      ],
+      "research_fields": [
+        "genome assembly",
+        "T2T genomics",
+        "repeat-rich genomes"
+      ],
+      "scientific_questions": [
+        "How can high-accuracy long reads improve reference genome quality?",
+        "How can repetitive or highly similar regions be resolved?"
+      ],
+      "methods": [
+        "PacBio",
+        "HiFi",
+        "CCS"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "genome_de_novo_assembly",
+      "capability_name": "De novo genome assembly",
+      "category": "Genome assembly",
+      "description": "De novo genome assembly for animals, plants, fungi, and other organisms using high-throughput sequencing evidence.",
+      "positive_keywords": [
+        "de novo genome",
+        "genome assembly",
+        "reference genome",
+        "基因组De novo",
+        "基因组组装"
+      ],
+      "synonyms": [
+        "de novo assembly",
+        "reference genome construction",
+        "从头组装"
+      ],
+      "research_fields": [
+        "genomics",
+        "comparative genomics",
+        "evolutionary genomics"
+      ],
+      "scientific_questions": [
+        "How can a high-quality reference genome support functional and evolutionary analysis?",
+        "How can chromosome-scale assemblies improve downstream analysis?"
+      ],
+      "methods": [
+        "long-read assembly",
+        "chromosome-scale assembly"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "t2t_genome_assembly",
+      "capability_name": "Telomere-to-telomere genome assembly",
+      "category": "Genome assembly",
+      "description": "T2T-oriented genome assembly and sequencing support for complete chromosomes and traditionally difficult repetitive regions.",
+      "positive_keywords": [
+        "T2T",
+        "telomere-to-telomere",
+        "gapless genome",
+        "complete genome",
+        "端粒到端粒",
+        "无缺口基因组"
+      ],
+      "synonyms": [
+        "T2T genome",
+        "gap-free genome assembly",
+        "complete chromosome assembly"
+      ],
+      "research_fields": [
+        "centromere biology",
+        "telomere biology",
+        "genome evolution",
+        "complex genome assembly"
+      ],
+      "scientific_questions": [
+        "How are centromeres and telomeres organized?",
+        "How can complete assemblies reveal previously inaccessible genomic variation?"
+      ],
+      "methods": [
+        "PacBio HiFi",
+        "ONT ultra-long",
+        "Hi-C scaffolding",
+        "complete genome assembly"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "pangenome_analysis",
+      "capability_name": "Pangenome and super-pangenome analysis",
+      "category": "Comparative genomics",
+      "description": "Pangenome-oriented comparative genomics for population-level genome diversity and structural variation research.",
+      "positive_keywords": [
+        "pangenome",
+        "pan-genome",
+        "super-pangenome",
+        "泛基因组",
+        "超级泛基因组"
+      ],
+      "synonyms": [
+        "population pangenome",
+        "graph pangenome",
+        "pan genome"
+      ],
+      "research_fields": [
+        "population genomics",
+        "crop genomics",
+        "evolutionary genomics"
+      ],
+      "scientific_questions": [
+        "How much diversity is missing from a single reference genome?",
+        "Which structural or presence-absence variants are associated with traits or adaptation?"
+      ],
+      "methods": [
+        "pangenome construction",
+        "comparative genomics",
+        "structural variation analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "whole_genome_resequencing",
+      "capability_name": "Whole-genome resequencing and variant discovery",
+      "category": "Genome variation",
+      "description": "Genome resequencing and comparative variant discovery across individuals or populations.",
+      "positive_keywords": [
+        "whole-genome resequencing",
+        "WGS",
+        "resequencing",
+        "重测序",
+        "变异检测"
+      ],
+      "synonyms": [
+        "genome resequencing",
+        "population resequencing",
+        "whole genome sequencing"
+      ],
+      "research_fields": [
+        "population genomics",
+        "genetic diversity",
+        "functional genomics"
+      ],
+      "scientific_questions": [
+        "What genomic variants distinguish individuals or populations?",
+        "Which variants may contribute to trait or disease differences?"
+      ],
+      "methods": [
+        "NGS resequencing",
+        "PacBio resequencing",
+        "variant calling"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "structural_variant_and_cnv_analysis",
+      "capability_name": "Structural variant and CNV analysis",
+      "category": "Genome variation",
+      "description": "Detection and analysis of structural variants, copy-number variants, SNPs, and InDels from resequencing data.",
+      "positive_keywords": [
+        "structural variation",
+        "structural variant",
+        "SV",
+        "CNV",
+        "copy number variation",
+        "结构变异",
+        "拷贝数变异",
+        "SNP",
+        "InDel"
+      ],
+      "synonyms": [
+        "SV calling",
+        "CNV analysis",
+        "genome variant analysis"
+      ],
+      "research_fields": [
+        "genome variation",
+        "disease genomics",
+        "population genetics"
+      ],
+      "scientific_questions": [
+        "What large-scale genomic changes distinguish samples?",
+        "Which structural variants may affect genes or regulatory regions?"
+      ],
+      "methods": [
+        "variant calling",
+        "SV detection",
+        "CNV analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "full_length_transcriptome_iso_seq",
+      "capability_name": "Full-length transcriptome Iso-Seq",
+      "category": "Transcriptomics",
+      "description": "PacBio full-length transcriptome sequencing for direct characterization of complete transcript structures.",
+      "positive_keywords": [
+        "Iso-Seq",
+        "full-length transcriptome",
+        "full length transcript",
+        "全长转录组",
+        "全长转录本"
+      ],
+      "synonyms": [
+        "PacBio Iso-Seq",
+        "full-length RNA sequencing",
+        "long-read transcriptomics"
+      ],
+      "research_fields": [
+        "transcriptomics",
+        "isoform biology",
+        "gene regulation"
+      ],
+      "scientific_questions": [
+        "What full-length transcript isoforms are present?",
+        "How does transcript structure vary across genes or conditions?"
+      ],
+      "methods": [
+        "PacBio Sequel II",
+        "full-length cDNA sequencing",
+        "Iso-Seq"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "isoform_splicing_fusion_analysis",
+      "capability_name": "Isoform, alternative splicing, and fusion transcript analysis",
+      "category": "Transcriptomics",
+      "description": "Long-read transcript analysis for isoforms, alternative splicing, fusion genes, alternative polyadenylation, and allele-specific transcript structure.",
+      "positive_keywords": [
+        "isoform",
+        "alternative splicing",
+        "fusion gene",
+        "alternative polyadenylation",
+        "可变剪接",
+        "融合基因",
+        "异构体",
+        "多聚腺苷酸化"
+      ],
+      "synonyms": [
+        "transcript isoform analysis",
+        "AS analysis",
+        "fusion transcript analysis"
+      ],
+      "research_fields": [
+        "RNA processing",
+        "transcript regulation",
+        "disease transcriptomics"
+      ],
+      "scientific_questions": [
+        "Which isoforms or splicing events are condition-specific?",
+        "Are fusion or alternative polyadenylation events involved in phenotype or disease?"
+      ],
+      "methods": [
+        "Iso-Seq analysis",
+        "isoform identification",
+        "alternative splicing analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "mrna_rnaseq",
+      "capability_name": "mRNA sequencing and RNA-seq analysis",
+      "category": "Transcriptomics",
+      "description": "mRNA sequencing and transcriptome analysis for expression, novel transcripts, gene fusion, RNA editing, and related regulatory questions.",
+      "positive_keywords": [
+        "RNA-seq",
+        "mRNA sequencing",
+        "transcriptome sequencing",
+        "mRNA测序",
+        "转录组测序"
+      ],
+      "synonyms": [
+        "RNA sequencing",
+        "mRNA-seq",
+        "gene expression profiling"
+      ],
+      "research_fields": [
+        "gene expression",
+        "functional genomics",
+        "disease transcriptomics"
+      ],
+      "scientific_questions": [
+        "Which genes or pathways change between biological conditions?",
+        "What transcript-level events accompany phenotype or disease?"
+      ],
+      "methods": [
+        "NGS RNA-seq",
+        "differential expression",
+        "fusion analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "small_rna_sequencing",
+      "capability_name": "Small RNA sequencing and analysis",
+      "category": "Transcriptomics",
+      "description": "Small RNA profiling for miRNA, siRNA, piRNA and other regulatory small RNA classes.",
+      "positive_keywords": [
+        "small RNA",
+        "miRNA",
+        "siRNA",
+        "piRNA",
+        "small RNA sequencing",
+        "小RNA测序",
+        "miRNA测序"
+      ],
+      "synonyms": [
+        "sRNA-seq",
+        "small RNA-seq",
+        "microRNA sequencing"
+      ],
+      "research_fields": [
+        "post-transcriptional regulation",
+        "RNA biology",
+        "gene regulation"
+      ],
+      "scientific_questions": [
+        "Which small RNAs change between conditions?",
+        "Which target genes may be regulated by differential small RNAs?"
+      ],
+      "methods": [
+        "small RNA library sequencing",
+        "target prediction",
+        "small RNA annotation"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "lncrna_sequencing",
+      "capability_name": "lncRNA sequencing and regulatory network analysis",
+      "category": "Transcriptomics",
+      "description": "lncRNA profiling for known and novel lncRNA discovery, differential analysis, target prediction, and regulatory-network research.",
+      "positive_keywords": [
+        "lncRNA",
+        "long noncoding RNA",
+        "lncRNA sequencing",
+        "长链非编码RNA",
+        "lncRNA测序"
+      ],
+      "synonyms": [
+        "long non-coding RNA sequencing",
+        "lncRNA-seq"
+      ],
+      "research_fields": [
+        "noncoding RNA",
+        "gene regulation",
+        "transcriptional regulation"
+      ],
+      "scientific_questions": [
+        "Which lncRNAs are associated with a biological process?",
+        "How may lncRNAs regulate target genes or gene-expression networks?"
+      ],
+      "methods": [
+        "lncRNA identification",
+        "novel lncRNA prediction",
+        "target prediction"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "circrna_sequencing",
+      "capability_name": "circRNA sequencing and regulatory analysis",
+      "category": "Transcriptomics",
+      "description": "circRNA profiling for circRNA discovery, source-gene analysis, differential analysis, and miRNA-binding interpretation.",
+      "positive_keywords": [
+        "circRNA",
+        "circular RNA",
+        "circRNA sequencing",
+        "环状RNA",
+        "circRNA测序"
+      ],
+      "synonyms": [
+        "circular RNA sequencing",
+        "circRNA-seq"
+      ],
+      "research_fields": [
+        "noncoding RNA",
+        "post-transcriptional regulation",
+        "RNA interaction"
+      ],
+      "scientific_questions": [
+        "Which circRNAs are differentially expressed?",
+        "How might circRNAs participate in miRNA-mediated regulatory networks?"
+      ],
+      "methods": [
+        "circRNA identification",
+        "differential analysis",
+        "miRNA binding prediction"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "whole_transcriptome_multi_rna",
+      "capability_name": "Whole-transcriptome multi-RNA analysis",
+      "category": "Transcriptomics",
+      "description": "Integrated analysis of multiple RNA classes to investigate multilayer transcriptional and ceRNA regulatory networks.",
+      "positive_keywords": [
+        "whole transcriptome",
+        "ceRNA",
+        "mRNA lncRNA circRNA miRNA",
+        "全转录组",
+        "ceRNA网络"
+      ],
+      "synonyms": [
+        "whole-transcriptome sequencing",
+        "integrated RNA analysis",
+        "multi-RNA analysis"
+      ],
+      "research_fields": [
+        "transcriptional regulation",
+        "noncoding RNA",
+        "regulatory networks"
+      ],
+      "scientific_questions": [
+        "How do multiple RNA classes interact in a regulatory network?",
+        "Which ceRNA relationships may contribute to phenotype?"
+      ],
+      "methods": [
+        "multi-RNA sequencing",
+        "ceRNA network analysis",
+        "integrated transcriptome analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "microbial_full_length_amplicon",
+      "capability_name": "Full-length 16S/18S/ITS microbial profiling",
+      "category": "Microbiome",
+      "description": "PacBio full-length amplicon sequencing for higher-resolution microbial community and taxonomic profiling.",
+      "positive_keywords": [
+        "16S",
+        "18S",
+        "ITS",
+        "full-length 16S",
+        "microbiome",
+        "全长16S",
+        "微生物群落"
+      ],
+      "synonyms": [
+        "full-length amplicon sequencing",
+        "PacBio 16S",
+        "full-length 16S/18S/ITS"
+      ],
+      "research_fields": [
+        "microbiome",
+        "microbial ecology",
+        "community profiling"
+      ],
+      "scientific_questions": [
+        "Which microbial taxa are present at high taxonomic resolution?",
+        "How does microbial community composition differ between samples?"
+      ],
+      "methods": [
+        "PacBio SMRT",
+        "CCS",
+        "full-length amplicon sequencing"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "microbiome_metagenomics",
+      "capability_name": "Microbiome and metagenomic analysis",
+      "category": "Microbiome",
+      "description": "Microbial and metagenomic research capability for community composition, diversity, and functional interpretation.",
+      "positive_keywords": [
+        "metagenome",
+        "metagenomics",
+        "microbiome",
+        "宏基因组",
+        "微生物组",
+        "微生物与宏基因组"
+      ],
+      "synonyms": [
+        "shotgun metagenomics",
+        "microbial community analysis",
+        "宏基因组分析"
+      ],
+      "research_fields": [
+        "microbial ecology",
+        "host-microbiome interaction",
+        "environmental microbiology"
+      ],
+      "scientific_questions": [
+        "How do microbial communities differ between conditions?",
+        "Which microbial functions or taxa are associated with phenotype?"
+      ],
+      "methods": [
+        "metagenomic analysis",
+        "microbiome bioinformatics"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "hic_3d_genome",
+      "capability_name": "Hi-C and 3D genome analysis",
+      "category": "3D genomics",
+      "description": "Hi-C sequencing and bioinformatics for genome-wide chromatin interactions, compartments, TADs, loops, and 3D genome organization.",
+      "positive_keywords": [
+        "Hi-C",
+        "3D genome",
+        "chromatin conformation",
+        "compartment",
+        "TAD",
+        "loop",
+        "三维基因组",
+        "染色质构象"
+      ],
+      "synonyms": [
+        "chromosome conformation capture",
+        "3D genomics",
+        "HiC"
+      ],
+      "research_fields": [
+        "3D genomics",
+        "chromatin organization",
+        "gene regulation"
+      ],
+      "scientific_questions": [
+        "How is the genome spatially organized?",
+        "How do compartments, TADs, and loops relate to gene regulation or phenotype?"
+      ],
+      "methods": [
+        "Hi-C",
+        "interaction matrix",
+        "compartment analysis",
+        "TAD calling",
+        "loop detection"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "hic_3_0",
+      "capability_name": "Hi-C 3.0",
+      "category": "3D genomics",
+      "description": "Advanced Hi-C 3.0 capability within the sender organization's 3D genome technology portfolio.",
+      "positive_keywords": [
+        "Hi-C 3.0",
+        "HiC 3.0",
+        "三维基因组"
+      ],
+      "synonyms": [
+        "advanced Hi-C",
+        "high-resolution Hi-C"
+      ],
+      "research_fields": [
+        "3D genomics",
+        "chromatin architecture"
+      ],
+      "scientific_questions": [
+        "How can improved chromatin-contact data enhance 3D genome resolution?"
+      ],
+      "methods": [
+        "Hi-C 3.0"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "micro_c",
+      "capability_name": "Micro-C",
+      "category": "3D genomics",
+      "description": "Micro-C capability for high-resolution chromatin conformation research.",
+      "positive_keywords": [
+        "Micro-C",
+        "MicroC",
+        "nucleosome resolution",
+        "微核酸酶三维基因组"
+      ],
+      "synonyms": [
+        "Micro-C sequencing",
+        "MicroC-seq"
+      ],
+      "research_fields": [
+        "3D genomics",
+        "chromatin architecture",
+        "nucleosome-scale organization"
+      ],
+      "scientific_questions": [
+        "What fine-scale chromatin structures are visible beyond conventional Hi-C resolution?"
+      ],
+      "methods": [
+        "Micro-C"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "hichip",
+      "capability_name": "HiChIP",
+      "category": "3D genomics",
+      "description": "HiChIP capability for protein- or histone-mark-associated chromatin interaction analysis.",
+      "positive_keywords": [
+        "HiChIP",
+        "protein-associated chromatin interaction",
+        "histone-associated loop"
+      ],
+      "synonyms": [
+        "Hi-ChIP",
+        "HiChIP-seq"
+      ],
+      "research_fields": [
+        "3D epigenomics",
+        "enhancer-promoter interaction",
+        "chromatin regulation"
+      ],
+      "scientific_questions": [
+        "Which chromatin interactions are associated with specific proteins or histone marks?"
+      ],
+      "methods": [
+        "HiChIP"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "hicut",
+      "capability_name": "HiCuT",
+      "category": "3D genomics",
+      "description": "HiCuT capability within the sender organization's targeted and epigenetic 3D genome technology portfolio.",
+      "positive_keywords": [
+        "HiCuT",
+        "targeted 3D genome",
+        "chromatin interaction"
+      ],
+      "synonyms": [
+        "Hi-CUT",
+        "HiCuT sequencing"
+      ],
+      "research_fields": [
+        "3D epigenomics",
+        "targeted chromatin interaction"
+      ],
+      "scientific_questions": [
+        "Which regulatory interactions can be resolved using targeted 3D genomic approaches?"
+      ],
+      "methods": [
+        "HiCuT"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "capture_hic",
+      "capability_name": "Capture Hi-C",
+      "category": "3D genomics",
+      "description": "Targeted Hi-C capture for high-depth interaction analysis around selected genomic regions and regulatory elements.",
+      "positive_keywords": [
+        "Capture Hi-C",
+        "Promoter Capture Hi-C",
+        "PCHi-C",
+        "targeted Hi-C",
+        "捕获Hi-C"
+      ],
+      "synonyms": [
+        "capture HiC",
+        "promoter capture Hi-C",
+        "targeted chromatin conformation"
+      ],
+      "research_fields": [
+        "regulatory genomics",
+        "enhancer-promoter interaction",
+        "noncoding variation"
+      ],
+      "scientific_questions": [
+        "Which distal regions interact with selected loci?",
+        "Which target genes may be linked to noncoding risk variants or regulatory regions?"
+      ],
+      "methods": [
+        "Hi-C library capture",
+        "targeted interaction sequencing"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "four_c_seq",
+      "capability_name": "4C-seq",
+      "category": "3D genomics",
+      "description": "4C-seq capability for viewpoint-centered chromatin interaction profiling.",
+      "positive_keywords": [
+        "4C-seq",
+        "4C sequencing",
+        "circular chromosome conformation capture"
+      ],
+      "synonyms": [
+        "4C",
+        "viewpoint chromatin interaction"
+      ],
+      "research_fields": [
+        "3D genomics",
+        "regulatory interaction"
+      ],
+      "scientific_questions": [
+        "Which genome-wide regions interact with a specific locus?"
+      ],
+      "methods": [
+        "4C-seq"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "hifi_c",
+      "capability_name": "HiFi-C (CiFi)",
+      "category": "3D epigenomics",
+      "description": "Long-read 3D epigenomic and chromatin-conformation capability within the sender organization's HiFi-C/CiFi platform.",
+      "positive_keywords": [
+        "HiFi-C",
+        "CiFi",
+        "long-read 3D genome",
+        "长读长表观多组学"
+      ],
+      "synonyms": [
+        "HiFiC",
+        "CiFi sequencing"
+      ],
+      "research_fields": [
+        "3D epigenomics",
+        "long-read epigenomics",
+        "chromatin architecture"
+      ],
+      "scientific_questions": [
+        "How can long-read information improve interpretation of chromatin conformation and epigenomic states?"
+      ],
+      "methods": [
+        "HiFi-C",
+        "long-read chromatin conformation"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "atac_seq",
+      "capability_name": "ATAC-seq and chromatin accessibility analysis",
+      "category": "Epigenomics",
+      "description": "ATAC-seq capability for profiling open chromatin, peak landscapes, motifs, and regulatory accessibility.",
+      "positive_keywords": [
+        "ATAC-seq",
+        "ATAC seq",
+        "chromatin accessibility",
+        "open chromatin",
+        "染色质可及性"
+      ],
+      "synonyms": [
+        "assay for transposase-accessible chromatin",
+        "ATAC sequencing"
+      ],
+      "research_fields": [
+        "epigenomics",
+        "gene regulation",
+        "regulatory genomics"
+      ],
+      "scientific_questions": [
+        "Which genomic regions become more or less accessible?",
+        "Which transcription-factor programs may underlie accessibility changes?"
+      ],
+      "methods": [
+        "ATAC-seq",
+        "peak calling",
+        "motif enrichment",
+        "functional annotation"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "cut_and_tag",
+      "capability_name": "CUT&Tag",
+      "category": "Epigenomics",
+      "description": "CUT&Tag profiling for histone modifications or chromatin-associated proteins with low-input and low-background workflows.",
+      "positive_keywords": [
+        "CUT&Tag",
+        "CUT and Tag",
+        "histone modification",
+        "组蛋白修饰",
+        "表观遗传"
+      ],
+      "synonyms": [
+        "cleavage under targets and tagmentation",
+        "CUTTag"
+      ],
+      "research_fields": [
+        "epigenomics",
+        "histone modification",
+        "transcription factor binding"
+      ],
+      "scientific_questions": [
+        "Where are specific histone marks or chromatin-associated proteins enriched?",
+        "How do epigenetic states differ between conditions?"
+      ],
+      "methods": [
+        "CUT&Tag",
+        "peak calling",
+        "motif analysis"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "chip_seq",
+      "capability_name": "ChIP-seq",
+      "category": "Epigenomics",
+      "description": "ChIP-seq capability within the sender organization's epigenome and 3D genome service portfolio.",
+      "positive_keywords": [
+        "ChIP-seq",
+        "ChIP seq",
+        "chromatin immunoprecipitation",
+        "histone mark",
+        "转录因子结合"
+      ],
+      "synonyms": [
+        "chromatin immunoprecipitation sequencing",
+        "ChIP sequencing"
+      ],
+      "research_fields": [
+        "epigenomics",
+        "transcription factor binding",
+        "histone modification"
+      ],
+      "scientific_questions": [
+        "Where do transcription factors or histone marks bind across the genome?"
+      ],
+      "methods": [
+        "ChIP-seq"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "wgbs",
+      "capability_name": "Whole-genome bisulfite sequencing (WGBS)",
+      "category": "Epigenomics",
+      "description": "WGBS capability for genome-wide DNA methylation profiling.",
+      "positive_keywords": [
+        "WGBS",
+        "whole-genome bisulfite sequencing",
+        "DNA methylation",
+        "bisulfite",
+        "全基因组甲基化"
+      ],
+      "synonyms": [
+        "whole genome bisulfite sequencing",
+        "methylome sequencing"
+      ],
+      "research_fields": [
+        "epigenomics",
+        "DNA methylation",
+        "gene regulation"
+      ],
+      "scientific_questions": [
+        "How does DNA methylation vary across genomic regions or biological conditions?"
+      ],
+      "methods": [
+        "WGBS"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_rna_seq",
+      "capability_name": "Single-cell RNA sequencing",
+      "category": "Single-cell genomics",
+      "description": "Single-cell transcriptomic profiling for cell heterogeneity, cell-type composition, differential expression, and complex tissue analysis.",
+      "positive_keywords": [
+        "single-cell RNA-seq",
+        "scRNA-seq",
+        "single cell transcriptome",
+        "单细胞转录组",
+        "单细胞RNA测序"
+      ],
+      "synonyms": [
+        "10x Genomics scRNA-seq",
+        "single-cell transcriptomics",
+        "scRNAseq"
+      ],
+      "research_fields": [
+        "cell heterogeneity",
+        "tumor microenvironment",
+        "development",
+        "cell differentiation"
+      ],
+      "scientific_questions": [
+        "Which cell types and states are present?",
+        "How do cell populations and gene-expression programs differ between conditions?"
+      ],
+      "methods": [
+        "10x Genomics",
+        "single-cell RNA-seq",
+        "clustering",
+        "cell-type annotation",
+        "differential expression"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_immune_repertoire",
+      "capability_name": "Single-cell immune repertoire sequencing",
+      "category": "Single-cell genomics",
+      "description": "Single-cell immune repertoire capability for linking immune receptor information with cellular states.",
+      "positive_keywords": [
+        "single-cell immune repertoire",
+        "scTCR",
+        "scBCR",
+        "V(D)J",
+        "单细胞免疫组库"
+      ],
+      "synonyms": [
+        "single-cell VDJ",
+        "TCR sequencing",
+        "BCR sequencing"
+      ],
+      "research_fields": [
+        "immunology",
+        "tumor immunology",
+        "immune clonality"
+      ],
+      "scientific_questions": [
+        "How do immune clonotypes relate to cell states or disease?",
+        "Which TCR/BCR clones expand across conditions?"
+      ],
+      "methods": [
+        "10x Genomics immune repertoire",
+        "single-cell V(D)J"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_atac_seq",
+      "capability_name": "Single-cell ATAC-seq",
+      "category": "Single-cell epigenomics",
+      "description": "Single-cell chromatin-accessibility profiling for cell-resolved regulatory landscapes and transcription-factor network analysis.",
+      "positive_keywords": [
+        "single-cell ATAC",
+        "scATAC-seq",
+        "single cell chromatin accessibility",
+        "单细胞ATAC"
+      ],
+      "synonyms": [
+        "10x single-cell ATAC",
+        "scATAC",
+        "single-cell accessibility"
+      ],
+      "research_fields": [
+        "single-cell epigenomics",
+        "regulatory genomics",
+        "cell heterogeneity"
+      ],
+      "scientific_questions": [
+        "How does chromatin accessibility differ among individual cells?",
+        "Which regulatory programs define cell types or disease states?"
+      ],
+      "methods": [
+        "10x Genomics scATAC",
+        "Tn5 accessibility profiling"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_rna_atac_multiome",
+      "capability_name": "Single-cell RNA + ATAC multiome",
+      "category": "Single-cell multi-omics",
+      "description": "Joint single-cell transcriptome and chromatin-accessibility analysis for linking regulatory state with gene expression.",
+      "positive_keywords": [
+        "RNA + ATAC",
+        "RNA+ATAC",
+        "single-cell multiome",
+        "single-cell transcriptome ATAC",
+        "单细胞转录组+ATAC"
+      ],
+      "synonyms": [
+        "10x Multiome",
+        "scRNA scATAC integration",
+        "single-cell RNA-ATAC"
+      ],
+      "research_fields": [
+        "single-cell multi-omics",
+        "gene regulation",
+        "cell-state regulation"
+      ],
+      "scientific_questions": [
+        "How are chromatin accessibility and gene expression coupled within the same cellular system?",
+        "Which regulatory elements drive cell-state-specific transcription?"
+      ],
+      "methods": [
+        "10x Genomics RNA+ATAC",
+        "multiome integration"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_full_length_transcriptome",
+      "capability_name": "Single-cell full-length transcriptome sequencing",
+      "category": "Single-cell transcriptomics",
+      "description": "Single-cell full-length transcriptome profiling combining cell barcoding with long-read sequencing for isoform-resolved cellular analysis.",
+      "positive_keywords": [
+        "single-cell full-length transcriptome",
+        "single-cell Iso-Seq",
+        "Kinnex",
+        "单细胞全长转录组"
+      ],
+      "synonyms": [
+        "single-cell long-read transcriptomics",
+        "scIso-Seq",
+        "Kinnex single-cell RNA"
+      ],
+      "research_fields": [
+        "single-cell transcriptomics",
+        "isoform biology",
+        "cell-state-specific splicing"
+      ],
+      "scientific_questions": [
+        "Which full-length isoforms are specific to particular cell types?",
+        "How does transcript structure vary across individual cells?"
+      ],
+      "methods": [
+        "10x cell barcoding",
+        "PacBio Kinnex",
+        "long-read transcript sequencing"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "spatial_transcriptomics",
+      "capability_name": "Spatial transcriptomics",
+      "category": "Spatial omics",
+      "description": "Spatial transcriptomic profiling for linking gene-expression patterns to tissue architecture and microenvironmental context.",
+      "positive_keywords": [
+        "spatial transcriptomics",
+        "spatial RNA",
+        "Visium",
+        "spatial gene expression",
+        "空间转录组"
+      ],
+      "synonyms": [
+        "spatial transcriptome",
+        "spatial omics",
+        "10x Visium"
+      ],
+      "research_fields": [
+        "spatial biology",
+        "tumor microenvironment",
+        "tissue architecture"
+      ],
+      "scientific_questions": [
+        "Where are cell states or gene-expression programs located in tissue?",
+        "How does tissue architecture shape gene expression and cellular interactions?"
+      ],
+      "methods": [
+        "10x Visium",
+        "spatial gene expression",
+        "spatial visualization"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_spatial_integration",
+      "capability_name": "Single-cell and spatial transcriptomics integration",
+      "category": "Multi-omics integration",
+      "description": "Integrated single-cell and spatial transcriptomic analysis for mapping cell states and cell-type composition into tissue context.",
+      "positive_keywords": [
+        "single-cell spatial integration",
+        "scRNA spatial",
+        "CARD",
+        "deconvolution",
+        "单细胞+空间",
+        "单细胞空间联合分析"
+      ],
+      "synonyms": [
+        "single-cell and spatial integration",
+        "spatial deconvolution",
+        "scRNA-seq + spatial transcriptomics"
+      ],
+      "research_fields": [
+        "spatial biology",
+        "cell mapping",
+        "tissue microenvironment"
+      ],
+      "scientific_questions": [
+        "How can cell types identified by scRNA-seq be localized in tissue?",
+        "Which cell populations dominate particular spatial niches?"
+      ],
+      "methods": [
+        "CARD",
+        "spatial deconvolution",
+        "integrated visualization"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "three_d_genome_bioinformatics",
+      "capability_name": "3D genome bioinformatics",
+      "category": "Bioinformatics",
+      "description": "Bioinformatics analysis of Hi-C/HiFi-C data including interaction matrices, normalization, compartments, TADs, loops, and 3D structure modeling.",
+      "positive_keywords": [
+        "Hi-C analysis",
+        "HiFi-C analysis",
+        "interaction matrix",
+        "TAD analysis",
+        "loop calling",
+        "3D modeling",
+        "三维基因组生信"
+      ],
+      "synonyms": [
+        "3D genome analysis",
+        "chromatin conformation bioinformatics"
+      ],
+      "research_fields": [
+        "3D genomics",
+        "bioinformatics",
+        "chromatin architecture"
+      ],
+      "scientific_questions": [
+        "How should chromatin interaction data be normalized and interpreted?",
+        "Which structural features change between biological conditions?"
+      ],
+      "methods": [
+        "interaction matrix construction",
+        "normalization",
+        "TAD calling",
+        "loop detection",
+        "3D structure modeling"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "epigenomics_bioinformatics",
+      "capability_name": "Epigenomics bioinformatics",
+      "category": "Bioinformatics",
+      "description": "Bioinformatics for ATAC-seq and CUT&Tag/related epigenomic datasets including QC, peak calling, motif enrichment, annotation, and functional interpretation.",
+      "positive_keywords": [
+        "epigenomics analysis",
+        "ATAC-seq analysis",
+        "CUT&Tag analysis",
+        "peak calling",
+        "motif enrichment",
+        "表观组学生信"
+      ],
+      "synonyms": [
+        "epigenetic bioinformatics",
+        "chromatin profiling analysis"
+      ],
+      "research_fields": [
+        "epigenomics",
+        "bioinformatics",
+        "gene regulation"
+      ],
+      "scientific_questions": [
+        "Which regulatory elements or motifs change across conditions?",
+        "How do epigenomic features connect to gene function and phenotype?"
+      ],
+      "methods": [
+        "quality control",
+        "peak calling",
+        "motif enrichment",
+        "annotation",
+        "functional association"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "single_cell_spatial_bioinformatics",
+      "capability_name": "Single-cell and spatial omics bioinformatics",
+      "category": "Bioinformatics",
+      "description": "Bioinformatics for single-cell and spatial data including QC, normalization, dimensionality reduction, clustering, cell-type annotation, differential expression, integration, and visualization.",
+      "positive_keywords": [
+        "single-cell analysis",
+        "spatial analysis",
+        "cell-type annotation",
+        "clustering",
+        "dimensionality reduction",
+        "单细胞生信",
+        "空间转录组分析"
+      ],
+      "synonyms": [
+        "scRNA-seq bioinformatics",
+        "spatial transcriptomics analysis",
+        "single-cell data analysis"
+      ],
+      "research_fields": [
+        "single-cell genomics",
+        "spatial omics",
+        "bioinformatics"
+      ],
+      "scientific_questions": [
+        "How can complex cellular populations be resolved and annotated?",
+        "How can single-cell and spatial datasets be integrated for biological interpretation?"
+      ],
+      "methods": [
+        "QC",
+        "normalization",
+        "clustering",
+        "cell annotation",
+        "differential expression",
+        "spatial visualization"
+      ],
+      "enabled": true
+    },
+    {
+      "capability_id": "multi_omics_integration",
+      "capability_name": "Multi-omics integration",
+      "category": "Bioinformatics",
+      "description": "Cross-modal integration of genomic, transcriptomic, epigenomic, single-cell, spatial, and 3D genome data for systems-level biological interpretation.",
+      "positive_keywords": [
+        "multi-omics",
+        "multiomics",
+        "integrative analysis",
+        "multi-omics integration",
+        "多组学",
+        "联合分析"
+      ],
+      "synonyms": [
+        "integrated omics",
+        "cross-modal analysis",
+        "multi-modal omics"
+      ],
+      "research_fields": [
+        "systems biology",
+        "gene regulation",
+        "functional genomics"
+      ],
+      "scientific_questions": [
+        "How do multiple molecular layers jointly explain phenotype or disease?",
+        "Which regulatory mechanisms emerge only after integrating complementary omics data?"
+      ],
+      "methods": [
+        "cross-modal integration",
+        "joint analysis",
+        "multi-omics visualization"
+      ],
+      "enabled": true
+    }
+  ],
+  "source_policy": {
+    "source_type": "verified_public_website_materials",
+    "direct_company_identifiers_removed": true,
+    "public_urls_removed": true,
+    "intended_use": "internal capability matching and academic cold email drafting"
+  }
+}

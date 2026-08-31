@@ -188,6 +188,10 @@ def evaluate_send_permission(
     if not _clean_text(draft_data.get("body")):
         blockers.append("missing_body")
 
+    quality_report = _quality_report_from_draft(draft_data)
+    if quality_report.get("status") == "fail":
+        blockers.append("draft_quality_failed")
+
     if draft_data.get("draft_status") == REVIEW_STATUS_CHANGES_REQUESTED:
         warnings.append("draft_needs_revision")
     if draft_data.get("draft_status") == REVIEW_STATUS_REJECTED:
@@ -280,6 +284,16 @@ def _draft_to_dict(draft: EmailDraft | dict[str, Any]) -> dict[str, Any]:
     if isinstance(draft, dict):
         return dict(draft)
     raise ValueError("draft must be an EmailDraft or dictionary")
+
+
+def _quality_report_from_draft(draft_data: dict[str, Any]) -> dict[str, Any]:
+    direct = draft_data.get("quality_report")
+    if isinstance(direct, dict):
+        return direct
+    evidence = draft_data.get("evidence")
+    if isinstance(evidence, dict) and isinstance(evidence.get("quality_report"), dict):
+        return evidence["quality_report"]
+    return {}
 
 
 def _safe_metadata(metadata: dict[str, Any]) -> dict[str, Any]:

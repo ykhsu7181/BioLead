@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from scholarlead_agent.api.errors import (
     ApiError,
@@ -28,6 +29,14 @@ def create_app() -> FastAPI:
         title="ScholarLead Agent API",
         version="0.1.0",
         description="Thin API boundary over existing ScholarLead Agent services.",
+    )
+    # Vue's Vite development server runs on a different localhost port.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://(127\.0\.0\.1|localhost):\d+",
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
     )
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(Exception, unhandled_error_handler)

@@ -120,6 +120,21 @@ def test_api_health_and_openapi(tmp_path: Path) -> None:
     assert openapi.json()["info"]["title"] == "ScholarLead Agent API"
 
 
+def test_api_allows_local_vue_development_origin(tmp_path: Path) -> None:
+    client = make_client(tmp_path / "api.sqlite")
+
+    response = client.options(
+        "/api/pubmed/search",
+        headers={
+            "Origin": "http://127.0.0.1:5173",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
+
+
 def test_api_conversation_flow_uses_unified_response(tmp_path: Path) -> None:
     client = make_client(tmp_path / "api.sqlite")
 
@@ -229,6 +244,10 @@ def test_api_email_draft_review_and_send_boundaries(tmp_path: Path) -> None:
     logs = client.get("/api/email-sends")
 
     assert drafts.json()["data"]["total"] == 1
+    workspace = drafts.json()["data"]["items"][0]["reviewer_workspace"]
+    assert workspace["paper_evidence"]["title"] == "Single-cell RNA sequencing in cancer"
+    assert workspace["quality_report"] == {}
+    assert workspace["versions"]["draft_version"] == "v1"
     assert review.json()["data"]["reviewed_count"] == 1
     assert send.json()["data"]["blocked_count"] == 1
     assert logs.json()["data"]["total"] == 1

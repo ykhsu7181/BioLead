@@ -178,6 +178,7 @@ def test_result_package_derives_service_match_rows_from_existing_email_drafts(
     assert service_rows[0]["Match_Status"] == "matched"
     assert draft_rows[0]["Matched_Service_ID"] == "single_cell_rna_seq"
     assert draft_rows[0]["Researcher_ID"] == service_rows[0]["Researcher_ID"]
+    assert "Quality_Status" in draft_rows[0]
 
 
 def test_result_package_workbook_contains_required_sheets(tmp_path: Path) -> None:

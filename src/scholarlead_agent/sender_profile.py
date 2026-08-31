@@ -10,6 +10,12 @@ from typing import Any
 
 
 DEFAULT_SENDER_PROFILE_PATH = Path("data/config/sender_profile.json")
+SENDER_INTRO_STYLE_I_LEAD = "i_lead"
+SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE = "organization_representative"
+_SUPPORTED_SENDER_INTRO_STYLES = {
+    SENDER_INTRO_STYLE_I_LEAD,
+    SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE,
+}
 
 
 @dataclass(frozen=True)
@@ -22,6 +28,7 @@ class SenderProfile:
     sender_organization: str
     sender_email: str | None = None
     signature: str | None = None
+    sender_intro_style: str = SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE
     source_path: str | None = None
 
 
@@ -44,6 +51,16 @@ def load_sender_profile(
     if not isinstance(payload, dict):
         raise ValueError("sender profile must be a JSON object")
 
+    sender_intro_style = (
+        _clean(payload.get("sender_intro_style"))
+        or SENDER_INTRO_STYLE_ORGANIZATION_REPRESENTATIVE
+    )
+    if sender_intro_style not in _SUPPORTED_SENDER_INTRO_STYLES:
+        raise ValueError(
+            "sender_intro_style must be one of: "
+            f"{', '.join(sorted(_SUPPORTED_SENDER_INTRO_STYLES))}"
+        )
+
     return SenderProfile(
         profile_version=_clean(payload.get("profile_version")) or "unknown",
         sender_name=_required(payload, "sender_name"),
@@ -51,6 +68,7 @@ def load_sender_profile(
         sender_organization=_required(payload, "sender_organization"),
         sender_email=_clean(payload.get("sender_email")),
         signature=_clean(payload.get("signature")),
+        sender_intro_style=sender_intro_style,
         source_path=str(source_path),
     )
 
@@ -65,6 +83,7 @@ def sender_profile_to_dict(profile: SenderProfile) -> dict[str, Any]:
         "sender_organization": profile.sender_organization,
         "sender_email": profile.sender_email,
         "signature": profile.signature,
+        "sender_intro_style": profile.sender_intro_style,
         "source_path": profile.source_path,
     }
 

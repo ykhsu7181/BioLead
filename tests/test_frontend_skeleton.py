@@ -62,6 +62,9 @@ def test_frontend_exposes_batch_email_review_and_send_controls() -> None:
     assert "/api/email-sends/batch-send" in api
     assert "批准所选草稿" in app
     assert "permission_check" in app
+    assert "/api/email-drafts/batch-generate" in api
+    assert "Generate batch drafts" in app
+    assert "Reviewer Workspace" in app
 
 
 def test_frontend_exposes_pubmed_search_and_result_tables() -> None:

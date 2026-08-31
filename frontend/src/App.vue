@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import {
+  batchGenerateEmailDrafts,
   batchReviewEmailDrafts,
   batchSendEmailDrafts,
   createJob,
@@ -46,6 +47,9 @@ const selectedDraftIds = ref([]);
 const reviewerName = ref("Reviewer");
 const sendActor = ref("Reviewer");
 const batchDraftStatus = ref(null);
+const batchDraftTaskId = ref("");
+const batchDraftMaxItems = ref(5);
+const selectedDraftId = ref("");
 const batchSendMode = ref("permission_check");
 const taskText = ref("帮我找 2025 年以来 single-cell cancer 的 PubMed 论文，并列出有公开邮箱的候选 PI。");
 const agentMessages = ref([
@@ -212,6 +216,19 @@ async function refreshDrafts() {
   }
 }
 
+async function generateBatchDrafts() {
+  clearError();
+  try {
+    batchDraftStatus.value = await batchGenerateEmailDrafts({
+      task_id: batchDraftTaskId.value || pubmedResult.value?.task_id || null,
+      max_items: Number(batchDraftMaxItems.value)
+    });
+    await refreshDrafts();
+  } catch (error) {
+    errorMessage.value = error.message;
+  }
+}
+
 async function refreshSendLogs() {
   clearError();
   try {
@@ -228,6 +245,10 @@ function toggleDraftSelection(draftId) {
   } else {
     selectedDraftIds.value = [...selectedDraftIds.value, draftId];
   }
+}
+
+function selectDraftForReview(draftId) {
+  selectedDraftId.value = draftId;
 }
 
 async function approveSelectedDrafts() {
@@ -548,6 +569,19 @@ onMounted(async () => {
           </select>
         </label>
       </div>
+      <div class="form-grid">
+        <label>
+          Batch draft task ID
+          <input v-model="batchDraftTaskId" :placeholder="pubmedResult?.task_id || 'optional task_id'" />
+        </label>
+        <label>
+          Batch draft limit
+          <input v-model.number="batchDraftMaxItems" type="number" min="1" max="50" />
+        </label>
+        <div class="form-actions">
+          <button type="button" @click="generateBatchDrafts">Generate batch drafts</button>
+        </div>
+      </div>
       <div class="button-row action-row">
         <button type="button" @click="approveSelectedDrafts">批准所选草稿</button>
         <button type="button" class="primary" @click="runBatchSendCheck">执行所选发送流程</button>
@@ -561,7 +595,9 @@ onMounted(async () => {
             <th>Lead</th>
             <th>Recipient</th>
             <th>Status</th>
+            <th>Quality</th>
             <th>Subject</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -578,13 +614,38 @@ onMounted(async () => {
             <td>{{ draft.lead_id }}</td>
             <td>{{ draft.verified_email || "missing" }}</td>
             <td>{{ draft.draft_status }}</td>
+            <td>{{ draft.reviewer_workspace?.quality_report?.status || "not_checked" }}</td>
             <td>{{ draft.subject }}</td>
+            <td><button type="button" @click="selectDraftForReview(draft.draft_id)">Review</button></td>
           </tr>
         </tbody>
       </table>
       <p v-if="!emailDrafts.length" class="muted">数据库中暂时没有邮件草稿。</p>
       <h3>最近状态</h3>
       <pre>{{ batchDraftStatus || { status: "no_batch_action_yet" } }}</pre>
+      <article v-if="selectedDraftId" class="reviewer-workspace">
+        <template v-for="draft in emailDrafts.filter((item) => item.draft_id === selectedDraftId)" :key="draft.draft_id">
+          <h3>Reviewer Workspace: {{ draft.draft_id }}</h3>
+          <div class="detail-grid">
+            <div><span>Draft mode</span><strong>{{ draft.reviewer_workspace?.versions?.draft_mode || "legacy" }}</strong></div>
+            <div><span>Quality</span><strong>{{ draft.reviewer_workspace?.quality_report?.status || "not_checked" }}</strong></div>
+            <div><span>Prompt</span><strong>{{ draft.reviewer_workspace?.versions?.prompt_version || "unknown" }}</strong></div>
+            <div><span>Capability status</span><strong>{{ draft.reviewer_workspace?.capability_match?.status || "not_matched" }}</strong></div>
+          </div>
+          <h4>Paper evidence</h4>
+          <p><strong>{{ draft.reviewer_workspace?.paper_evidence?.title }}</strong></p>
+          <p class="muted">{{ draft.reviewer_workspace?.paper_evidence?.abstract_preview || "No abstract evidence available." }}</p>
+          <h4>Capability match</h4>
+          <pre>{{ draft.reviewer_workspace?.capability_match || {} }}</pre>
+          <h4>Quality report</h4>
+          <pre>{{ draft.reviewer_workspace?.quality_report || {} }}</pre>
+          <h4>Versions and warnings</h4>
+          <pre>{{ { versions: draft.reviewer_workspace?.versions, warnings: draft.reviewer_workspace?.warnings, supersedes_draft_id: draft.payload?.supersedes_draft_id } }}</pre>
+          <h4>Draft</h4>
+          <p><strong>{{ draft.subject }}</strong></p>
+          <pre>{{ draft.body }}</pre>
+        </template>
+      </article>
       <h3>发送记录</h3>
       <table>
         <thead>

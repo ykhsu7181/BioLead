@@ -19,6 +19,7 @@ dependencies = [
 scholarlead-agent = "scholarlead_agent.main:main"
 scholarlead-pubmed = "scholarlead_agent.pubmed_main:main"
 scholarlead-db = "scholarlead_agent.database_main:main"
+scholarlead-email-benchmark = "scholarlead_agent.email_benchmark_main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
