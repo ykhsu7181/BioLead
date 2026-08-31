@@ -48,7 +48,7 @@ async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
     return api_error_response(
         ApiError(
             code="INTERNAL_ERROR",
-            message=str(exc),
+            message="An unexpected server error occurred.",
             status_code=500,
         )
     )

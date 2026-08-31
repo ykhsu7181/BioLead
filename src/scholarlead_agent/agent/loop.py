@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from scholarlead_agent.agent.messages import (
@@ -78,6 +78,15 @@ class AgentRunResult:
     final_answer: str
     messages: list[dict[str, Any]]
     turns: int
+    tool_executions: list["AgentToolExecution"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class AgentToolExecution:
+    """One internal Tool result retained for post-run persistence."""
+
+    name: str
+    result: ToolResult
 
 
 class AgentRunner:
@@ -118,6 +127,7 @@ class AgentRunner:
             *(context_messages or []),
             user_message(user_input),
         ]
+        tool_executions: list[AgentToolExecution] = []
 
         for turn_index in range(1, self.max_turns + 1):
             reply = self._complete(messages)
@@ -129,7 +139,9 @@ class AgentRunner:
                     assistant_message(content=reply.content, tool_calls=tool_calls)
                 )
                 for tool_call in tool_calls:
-                    messages.append(self._execute_tool_call(tool_call))
+                    tool_message_payload, execution = self._execute_tool_call(tool_call)
+                    messages.append(tool_message_payload)
+                    tool_executions.append(execution)
                 continue
 
             if reply.content and reply.content.strip():
@@ -138,6 +150,7 @@ class AgentRunner:
                     final_answer=reply.content,
                     messages=messages,
                     turns=turn_index,
+                    tool_executions=tool_executions,
                 )
 
             raise IncompleteModelReplyError("model reply had no final content")
@@ -157,7 +170,10 @@ class AgentRunner:
             raise IncompleteModelReplyError("model must return ModelReply")
         return reply
 
-    def _execute_tool_call(self, tool_call: dict[str, Any]) -> dict[str, Any]:
+    def _execute_tool_call(
+        self,
+        tool_call: dict[str, Any],
+    ) -> tuple[dict[str, Any], AgentToolExecution]:
         tool_call_id = _extract_tool_call_id(tool_call)
         tool_name = _extract_tool_name(tool_call)
         preparation = self.tool_registry.prepare(tool_call, context=self.context)
@@ -167,10 +183,13 @@ class AgentRunner:
                 preparation.prepared_call,
                 context=self.context,
             )
-            return tool_message(
-                tool_call_id=tool_call_id,
-                name=preparation.prepared_call.name,
-                result=result,
+            return (
+                tool_message(
+                    tool_call_id=tool_call_id,
+                    name=preparation.prepared_call.name,
+                    result=result,
+                ),
+                AgentToolExecution(name=preparation.prepared_call.name, result=result),
             )
 
         result = ToolResult(
@@ -180,10 +199,14 @@ class AgentRunner:
             error_message=preparation.error_message,
             errors=preparation.errors,
         )
-        return tool_message(
-            tool_call_id=tool_call_id,
-            name=tool_name or "unknown",
-            result=result,
+        name = tool_name or "unknown"
+        return (
+            tool_message(
+                tool_call_id=tool_call_id,
+                name=name,
+                result=result,
+            ),
+            AgentToolExecution(name=name, result=result),
         )
 
     def _raise_for_incomplete_reply(self, reply: ModelReply) -> None:

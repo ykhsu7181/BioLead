@@ -31,6 +31,13 @@ export function runPubMedSearch(payload) {
   });
 }
 
+export function runAgent(payload) {
+  return request("/api/agent/run", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function createResultPackage(payload) {
   return request("/api/result-packages", {
     method: "POST",
@@ -42,8 +49,15 @@ export function getResultPackageDownloadUrl(packageId) {
   return `${API_BASE_URL}/api/result-packages/${encodeURIComponent(packageId)}/download`;
 }
 
-export function listLeads() {
-  return request("/api/leads?page=1&page_size=50");
+export function listLeads({ leadIds = [] } = {}) {
+  const params = new URLSearchParams({
+    page: "1",
+    page_size: leadIds.length > 0 ? "100" : "50"
+  });
+  if (leadIds.length > 0) {
+    params.set("lead_ids", leadIds.join(","));
+  }
+  return request(`/api/leads?${params.toString()}`);
 }
 
 export function getLead(leadId) {

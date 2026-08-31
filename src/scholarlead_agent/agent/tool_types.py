@@ -19,6 +19,7 @@ class ToolResult:
     error_code: str | None = None
     error_message: str | None = None
     errors: list[dict[str, Any]] = field(default_factory=list)
+    persistence_payload: Any | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass(frozen=True)

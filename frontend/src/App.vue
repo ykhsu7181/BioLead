@@ -15,6 +15,7 @@ import {
   listEmailDrafts,
   listEmailSends,
   listLeads,
+  runAgent,
   runPubMedSearch
 } from "./api";
 
@@ -51,6 +52,11 @@ const batchDraftTaskId = ref("");
 const batchDraftMaxItems = ref(5);
 const selectedDraftId = ref("");
 const batchSendMode = ref("permission_check");
+const agentConversationId = ref("");
+const agentResult = ref(null);
+const isRunningAgent = ref(false);
+const pendingAgentMessage = ref("");
+const pendingAgentIdempotencyKey = ref("");
 const taskText = ref("帮我找 2025 年以来 single-cell cancer 的 PubMed 论文，并列出有公开邮箱的候选 PI。");
 const agentMessages = ref([
   {
@@ -288,12 +294,72 @@ async function runBatchSendCheck() {
   }
 }
 
-function runAgentPlaceholder() {
-  agentMessages.value.push({ role: "user", content: taskText.value });
-  agentMessages.value.push({
-    role: "assistant",
-    content: "Agent 多轮执行仍在后续迁移；当前请先使用 PubMed 检索页完成真实检索。"
-  });
+async function runAgentTask() {
+  const message = taskText.value.trim();
+  if (!message) {
+    errorMessage.value = "请输入 Agent 任务。";
+    return;
+  }
+  if (pendingAgentMessage.value !== message) {
+    pendingAgentMessage.value = message;
+    pendingAgentIdempotencyKey.value = createAgentIdempotencyKey();
+  }
+
+  clearError();
+  isRunningAgent.value = true;
+  agentMessages.value.push({ role: "user", content: message });
+  try {
+    agentResult.value = await runAgent({
+      message,
+      conversation_id: agentConversationId.value || null,
+      max_turns: 6,
+      idempotency_key: pendingAgentIdempotencyKey.value
+    });
+    agentConversationId.value = agentResult.value.conversation_id || "";
+    agentMessages.value.push({
+      role: "assistant",
+      content: agentResult.value.final_answer || "Agent completed without a final answer."
+    });
+    pendingAgentMessage.value = "";
+    pendingAgentIdempotencyKey.value = "";
+    if ((agentResult.value.selected_lead_ids || []).length > 0) {
+      await loadLeadsByIds(agentResult.value.selected_lead_ids);
+    }
+  } catch (error) {
+    errorMessage.value = error.message;
+  } finally {
+    isRunningAgent.value = false;
+  }
+}
+
+function createAgentIdempotencyKey() {
+  if (globalThis.crypto?.randomUUID) {
+    return `agent-run-${globalThis.crypto.randomUUID()}`;
+  }
+  return `agent-run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function showAgentLeads() {
+  const leadIds = agentResult.value?.selected_lead_ids || [];
+  if (!leadIds.length) {
+    return;
+  }
+  clearError();
+  try {
+    await loadLeadsByIds(leadIds);
+  } catch (error) {
+    errorMessage.value = error.message;
+    return;
+  }
+  activeView.value = "leads";
+}
+
+async function loadLeadsByIds(leadIds) {
+  const data = await listLeads({ leadIds });
+  leads.value = data.items || [];
+  if (leads.value.length > 0) {
+    selectedLeadId.value = leads.value[0].lead_id;
+  }
 }
 
 onMounted(async () => {
@@ -450,7 +516,26 @@ onMounted(async () => {
         <button type="button" @click="refreshHealth">刷新 API</button>
       </div>
       <textarea v-model="taskText" rows="4" aria-label="Agent task"></textarea>
-      <button type="button" class="primary" @click="runAgentPlaceholder">运行 Agent</button>
+      <button type="button" class="primary" :disabled="isRunningAgent" @click="runAgentTask">
+        {{ isRunningAgent ? "运行中..." : "运行 Agent" }}
+      </button>
+      <article v-if="agentResult" class="agent-result">
+        <h3>Agent 结果</h3>
+        <div class="detail-grid">
+          <div><span>Conversation</span><strong>{{ agentResult.conversation_id }}</strong></div>
+          <div><span>Status</span><strong>{{ agentResult.status }}</strong></div>
+          <div><span>Tools</span><strong>{{ (agentResult.tools_used || []).join(", ") || "none" }}</strong></div>
+          <div><span>Sources</span><strong>{{ (agentResult.sources_used || []).join(", ") || "none" }}</strong></div>
+          <div><span>New Leads</span><strong>{{ agentResult.result_summary?.persisted_lead_count || 0 }}</strong></div>
+        </div>
+        <button
+          v-if="(agentResult.selected_lead_ids || []).length > 0"
+          type="button"
+          @click="showAgentLeads"
+        >
+          查看客户列表
+        </button>
+      </article>
       <div class="message-list">
         <article v-for="(message, index) in agentMessages" :key="index" class="message">
           <strong>{{ message.role }}</strong>
@@ -497,7 +582,7 @@ onMounted(async () => {
     <section v-if="activeView === 'leads'" class="panel">
       <div class="section-heading">
         <h2>客户列表</h2>
-        <button type="button" @click="refreshLeads">刷新客户</button>
+        <button type="button" @click="refreshLeads">显示全部客户</button>
       </div>
       <table>
         <thead>

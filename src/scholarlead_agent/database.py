@@ -29,7 +29,7 @@ from scholarlead_agent.pubmed_models import PubMedLead, PubMedPaper
 from scholarlead_agent.unified_models import EvidenceRecord
 
 
-DATABASE_SCHEMA_VERSION = 4
+DATABASE_SCHEMA_VERSION = 5
 
 EXPECTED_TABLES = {
     "schema_migrations",
@@ -53,6 +53,7 @@ EXPECTED_TABLES = {
     "jobs",
     "job_items",
     "settings",
+    "agent_run_idempotency",
 }
 
 
@@ -460,6 +461,97 @@ def persist_pubmed_run_result(
         run_report_path=str(result.run_report_path),
         report=result.run_report,
     )
+
+
+def claim_agent_run_idempotency(
+    connection: sqlite3.Connection,
+    *,
+    idempotency_key: str,
+    request_fingerprint: str,
+) -> dict[str, Any]:
+    """Claim an Agent run key or return its prior state."""
+
+    key = _clean(idempotency_key)
+    if not key:
+        raise ValueError("idempotency_key cannot be empty")
+
+    row = connection.execute(
+        "SELECT * FROM agent_run_idempotency WHERE idempotency_key = ?",
+        (key,),
+    ).fetchone()
+    if row is None:
+        now = _now()
+        connection.execute(
+            """
+            INSERT INTO agent_run_idempotency (
+                idempotency_key, request_fingerprint, status, response_json,
+                created_at, updated_at
+            )
+            VALUES (?, ?, 'in_progress', NULL, ?, ?)
+            """,
+            (key, request_fingerprint, now, now),
+        )
+        connection.commit()
+        return {"state": "claimed"}
+
+    record = dict(row)
+    if record["request_fingerprint"] != request_fingerprint:
+        return {"state": "conflict"}
+    if record["status"] == "completed" and record["response_json"]:
+        return {
+            "state": "completed",
+            "response": json.loads(record["response_json"]),
+        }
+    if record["status"] == "in_progress":
+        return {"state": "in_progress"}
+
+    connection.execute(
+        """
+        UPDATE agent_run_idempotency
+        SET status = 'in_progress', response_json = NULL, updated_at = ?
+        WHERE idempotency_key = ?
+        """,
+        (_now(), key),
+    )
+    connection.commit()
+    return {"state": "claimed"}
+
+
+def complete_agent_run_idempotency(
+    connection: sqlite3.Connection,
+    *,
+    idempotency_key: str,
+    response: dict[str, Any],
+) -> None:
+    """Store the completed public Agent response for a retry."""
+
+    connection.execute(
+        """
+        UPDATE agent_run_idempotency
+        SET status = 'completed', response_json = ?, updated_at = ?
+        WHERE idempotency_key = ?
+        """,
+        (_json(response), _now(), idempotency_key),
+    )
+    connection.commit()
+
+
+def fail_agent_run_idempotency(
+    connection: sqlite3.Connection,
+    *,
+    idempotency_key: str,
+) -> None:
+    """Mark a failed Agent run key retryable without storing internal errors."""
+
+    connection.execute(
+        """
+        UPDATE agent_run_idempotency
+        SET status = 'failed', updated_at = ?
+        WHERE idempotency_key = ?
+        """,
+        (_now(), idempotency_key),
+    )
+    connection.commit()
 
 
 def insert_evidence_record(
@@ -1104,6 +1196,15 @@ CREATE TABLE IF NOT EXISTS job_items (
 
 CREATE INDEX IF NOT EXISTS idx_job_items_job_status
 ON job_items(job_id, status);
+
+CREATE TABLE IF NOT EXISTS agent_run_idempotency (
+    idempotency_key TEXT PRIMARY KEY,
+    request_fingerprint TEXT NOT NULL,
+    status TEXT NOT NULL,
+    response_json TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,

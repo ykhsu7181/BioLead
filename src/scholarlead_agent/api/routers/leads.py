@@ -20,12 +20,26 @@ router = APIRouter(prefix="/api", tags=["leads"])
 def list_leads(
     page: int = 1,
     page_size: int = 50,
+    lead_ids: str | None = None,
     connection: sqlite3.Connection = Depends(get_database),
 ) -> dict[str, object]:
-    rows = fetch_all(
-        connection,
-        "SELECT * FROM leads ORDER BY updated_at DESC, lead_id DESC",
-    )
+    requested_ids = _parse_lead_ids(lead_ids)
+    if requested_ids:
+        placeholders = ", ".join("?" for _ in requested_ids)
+        rows_by_id = {
+            str(row["lead_id"]): row
+            for row in fetch_all(
+                connection,
+                f"SELECT * FROM leads WHERE lead_id IN ({placeholders})",
+                tuple(requested_ids),
+            )
+        }
+        rows = [rows_by_id[lead_id] for lead_id in requested_ids if lead_id in rows_by_id]
+    else:
+        rows = fetch_all(
+            connection,
+            "SELECT * FROM leads ORDER BY updated_at DESC, lead_id DESC",
+        )
     items = [_lead_row_to_dict(row) for row in rows]
     start = max(page - 1, 0) * page_size
     end = start + page_size
@@ -37,6 +51,15 @@ def list_leads(
             "total": len(items),
         }
     )
+
+
+def _parse_lead_ids(lead_ids: str | None) -> list[str]:
+    if not lead_ids:
+        return []
+    values = [item.strip() for item in lead_ids.split(",") if item.strip()]
+    if len(values) > 100:
+        raise ApiError("INVALID_LEAD_IDS", "At most 100 lead IDs may be requested.", 400)
+    return list(dict.fromkeys(values))
 
 
 @router.get("/leads/{lead_id}")

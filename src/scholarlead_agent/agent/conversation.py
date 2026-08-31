@@ -77,3 +77,19 @@ def task_context_to_dict(context: TaskContext) -> dict[str, Any]:
         "last_selected_lead_ids": list(context.last_selected_lead_ids),
         "updated_at": context.updated_at,
     }
+
+
+def with_selected_lead_ids(
+    context: TaskContext,
+    selected_lead_ids: list[str],
+) -> TaskContext:
+    """Return task context with the latest structured Lead selection."""
+
+    return TaskContext(
+        conversation_id=context.conversation_id,
+        task_id=context.task_id,
+        last_run_report_path=context.last_run_report_path,
+        last_lead_ids=list(context.last_lead_ids),
+        last_selected_lead_ids=list(selected_lead_ids),
+        updated_at=utc_now_iso(),
+    )

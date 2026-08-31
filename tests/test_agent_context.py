@@ -5,7 +5,11 @@ from scholarlead_agent.agent.context import (
     build_task_context_summary,
     task_context_from_agent_messages,
 )
-from scholarlead_agent.agent.conversation import ConversationMessage, TaskContext
+from scholarlead_agent.agent.conversation import (
+    ConversationMessage,
+    TaskContext,
+    with_selected_lead_ids,
+)
 
 
 def test_build_context_messages_limits_recent_messages() -> None:
@@ -78,3 +82,18 @@ def test_task_context_from_agent_messages_extracts_tool_result_state() -> None:
 
 def test_build_task_context_summary_handles_missing_context() -> None:
     assert build_task_context_summary(None) == "No previous task context is available."
+
+
+def test_with_selected_lead_ids_preserves_task_context() -> None:
+    original = TaskContext(
+        conversation_id="conv-1",
+        task_id="task-1",
+        last_lead_ids=["lead-1", "lead-2"],
+    )
+
+    updated = with_selected_lead_ids(original, ["lead-2"])
+
+    assert updated.conversation_id == "conv-1"
+    assert updated.task_id == "task-1"
+    assert updated.last_lead_ids == ["lead-1", "lead-2"]
+    assert updated.last_selected_lead_ids == ["lead-2"]

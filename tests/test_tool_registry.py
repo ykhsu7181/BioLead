@@ -197,6 +197,42 @@ def test_prepare_accepts_openai_style_tool_call_and_context() -> None:
     assert result.prepared_call.context is context
 
 
+def test_prepare_applies_generic_max_results_execution_limit() -> None:
+    received: list[dict[str, object]] = []
+    registry = ToolRegistry()
+    registry.register(
+        ToolDefinition(
+            name="search_records",
+            description="Search records for a bounded result set.",
+            input_schema={
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["max_results"],
+                "properties": {
+                    "max_results": {"type": "integer", "minimum": 1, "maximum": 20}
+                },
+            },
+            effect="read",
+            handler=lambda arguments: (
+                received.append(arguments)
+                or ToolResult(success=True, source="search_records", data=arguments)
+            ),
+        )
+    )
+
+    prepared_result = registry.prepare(
+        {"name": "search_records", "arguments": json.dumps({"max_results": 10})},
+        context=ToolContext(max_results_limit=5),
+    )
+
+    assert prepared_result.success is True
+    assert prepared_result.prepared_call is not None
+    assert prepared_result.prepared_call.arguments == {"max_results": 5}
+    result = registry.invoke(prepared_result.prepared_call)
+    assert result.success is True
+    assert received == [{"max_results": 5}]
+
+
 def test_invoke_runs_prepared_tool() -> None:
     registry = ToolRegistry()
     registry.register(make_echo_tool())

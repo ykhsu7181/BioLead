@@ -110,6 +110,7 @@ def search_pubmed(
         source="pubmed",
         data=_build_tool_data(result),
         errors=result.errors,
+        persistence_payload=result,
     )
 
 

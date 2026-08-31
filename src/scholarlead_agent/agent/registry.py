@@ -20,6 +20,7 @@ class ToolContext:
     run_id: str | None = None
     identity: str | None = None
     idempotency_key: str | None = None
+    max_results_limit: int | None = None
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,11 @@ class ToolRegistry:
         if tool is None:
             return _prepare_error("unknown_tool", f"unknown tool: {tool_name}")
 
-        schema_errors = validate_arguments_against_schema(arguments, tool.input_schema)
+        limited_arguments = _apply_execution_limits(arguments, context)
+        schema_errors = validate_arguments_against_schema(
+            limited_arguments,
+            tool.input_schema,
+        )
         if schema_errors:
             return ToolPreparationResult(
                 success=False,
@@ -109,7 +114,7 @@ class ToolRegistry:
             prepared_call=PreparedToolCall(
                 tool=tool,
                 name=tool_name,
-                arguments=arguments,
+                arguments=limited_arguments,
                 tool_call_id=tool_call_id,
                 context=context or ToolContext(),
             ),
@@ -317,3 +322,24 @@ def _prepare_error(error_code: str, message: str) -> ToolPreparationResult:
         error_message=message,
         errors=[{"message": message}],
     )
+
+
+def _apply_execution_limits(
+    arguments: dict[str, Any],
+    context: ToolContext | None,
+) -> dict[str, Any]:
+    """Apply generic execution limits without coupling the registry to a tool."""
+
+    limited = dict(arguments)
+    max_results_limit = context.max_results_limit if context else None
+    requested_max_results = limited.get("max_results")
+    if (
+        isinstance(max_results_limit, int)
+        and not isinstance(max_results_limit, bool)
+        and max_results_limit > 0
+        and isinstance(requested_max_results, int)
+        and not isinstance(requested_max_results, bool)
+        and requested_max_results > max_results_limit
+    ):
+        limited["max_results"] = max_results_limit
+    return limited

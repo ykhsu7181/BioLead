@@ -87,3 +87,16 @@ def test_frontend_exposes_result_package_generation_and_download() -> None:
     assert "生成结果包" in app
     assert "下载 Excel" in app
     assert "generateResultPackage" in app
+
+
+def test_frontend_agent_dialog_uses_the_real_agent_api() -> None:
+    app = (FRONTEND / "src" / "App.vue").read_text(encoding="utf-8")
+    api = (FRONTEND / "src" / "api.js").read_text(encoding="utf-8")
+
+    assert "/api/agent/run" in api
+    assert "runAgentTask" in app
+    assert "runAgentPlaceholder" not in app
+    assert "agentConversationId" in app
+    assert "pendingAgentIdempotencyKey" in app
+    assert "selected_lead_ids" in app
+    assert "showAgentLeads" in app
