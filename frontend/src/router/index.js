@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
+import AppLayout from "../layouts/AppLayout.vue";
+import DashboardView from "../views/DashboardView.vue";
 import LegacyWorkbenchView from "../views/LegacyWorkbenchView.vue";
 
 const router = createRouter({
@@ -6,7 +8,14 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/workbench"
+      component: AppLayout,
+      children: [
+        {
+          path: "",
+          name: "dashboard",
+          component: DashboardView
+        }
+      ]
     },
     {
       path: "/workbench",

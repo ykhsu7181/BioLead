@@ -770,3 +770,5 @@ onMounted(async () => {
     </section>
   </main>
 </template>
+
+<style scoped src="../styles/legacy.css"></style>

@@ -15,8 +15,20 @@ def test_vue_frontend_skeleton_files_exist() -> None:
         "src/App.vue",
         "src/api.js",
         "src/router/index.js",
+        "src/layouts/AppLayout.vue",
+        "src/views/DashboardView.vue",
         "src/views/LegacyWorkbenchView.vue",
-        "src/styles.css",
+        "src/components/branding/BioLeadLogo.vue",
+        "src/components/navigation/AppSidebar.vue",
+        "src/components/navigation/SidebarNavItem.vue",
+        "src/components/navigation/SidebarToggleButton.vue",
+        "src/components/dashboard/MetricSummaryCard.vue",
+        "src/components/dashboard/RecentTasksPanel.vue",
+        "src/components/dashboard/PendingActionsPanel.vue",
+        "src/styles/tokens.css",
+        "src/styles/base.css",
+        "src/styles/layout.css",
+        "src/styles/legacy.css",
         "README.md",
     ]
 
@@ -32,6 +44,7 @@ def test_vue_frontend_package_uses_vite_and_vue() -> None:
     assert "build" in package["scripts"]
     assert "vue" in package["dependencies"]
     assert "vue-router" in package["dependencies"]
+    assert "@lucide/vue" in package["dependencies"]
     assert "vite" in package["dependencies"]
 
 
@@ -124,7 +137,28 @@ def test_frontend_routes_root_and_legacy_workbench() -> None:
     assert "RouterView" in app
     assert "createApp(App).use(router)" in main
     assert 'path: "/"' in router
-    assert 'redirect: "/workbench"' in router
+    assert "DashboardView" in router
+    assert "AppLayout" in router
     assert 'path: "/workbench"' in router
     assert "LegacyWorkbenchView" in router
     assert "route.query.view" in legacy
+
+
+def test_frontend_dashboard_has_desktop_layout_and_persisted_sidebar() -> None:
+    dashboard = (FRONTEND / "src" / "views" / "DashboardView.vue").read_text(
+        encoding="utf-8"
+    )
+    sidebar = (
+        FRONTEND / "src" / "components" / "navigation" / "AppSidebar.vue"
+    ).read_text(encoding="utf-8")
+    tokens = (FRONTEND / "src" / "styles" / "tokens.css").read_text(encoding="utf-8")
+    base = (FRONTEND / "src" / "styles" / "base.css").read_text(encoding="utf-8")
+
+    assert "潜在客户" in dashboard
+    assert "待审核邮件" in dashboard
+    assert "待发送邮件" in dashboard
+    assert "biolead.sidebar.collapsed" in sidebar
+    assert "252px" in tokens
+    assert "72px" in tokens
+    assert "--bl-radius-lg: 8px" in tokens
+    assert "min-width: 1280px" in base

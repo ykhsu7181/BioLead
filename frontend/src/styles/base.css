@@ -1,0 +1,47 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 1280px;
+  background: var(--bl-bg-page);
+}
+
+body {
+  min-width: 1280px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bl-bg-page);
+  color: var(--bl-text-primary);
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--bl-shadow-focus);
+}
+
+#app {
+  min-height: 100vh;
+}
