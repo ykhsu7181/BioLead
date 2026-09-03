@@ -231,6 +231,7 @@ def test_batch_send_permission_check_does_not_call_provider_and_logs_blocked(tmp
     assert result.blocked_count == 1
     assert provider.calls == []
     assert logs[0]["status"] == "blocked"
+    assert payload["send_mode"] == "permission_check"
     assert "permission_check_only" in payload["permission_blockers"]
 
 
@@ -251,6 +252,7 @@ def test_batch_send_real_recipient_uses_injected_provider_and_persists_log(tmp_p
         )
 
         logs = fetch_all(connection, "SELECT * FROM email_send_logs")
+        payload = json.loads(logs[0]["payload_json"])
 
     assert result.status == "completed"
     assert result.sent_count == 1
@@ -258,3 +260,4 @@ def test_batch_send_real_recipient_uses_injected_provider_and_persists_log(tmp_p
     assert provider.calls[0].recipient_email == "alice@example.edu"
     assert logs[0]["status"] == "sent"
     assert logs[0]["provider_message_id"] == "message-1"
+    assert payload["send_mode"] == "real_recipient"

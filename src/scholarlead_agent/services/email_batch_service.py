@@ -386,6 +386,7 @@ def _send_or_check_one(
             draft_id=draft_id,
         )
     result_data = email_send_result_to_dict(result)
+    result_data["send_mode"] = mode
     if result_data.get("audit_record"):
         insert_email_review_record(connection, result_data["audit_record"])
     return result_data

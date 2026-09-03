@@ -242,6 +242,7 @@ def test_api_email_draft_review_and_send_boundaries(tmp_path: Path) -> None:
         },
     )
     logs = client.get("/api/email-sends")
+    reviewed_drafts = client.get("/api/email-drafts")
 
     assert drafts.json()["data"]["total"] == 1
     workspace = drafts.json()["data"]["items"][0]["reviewer_workspace"]
@@ -251,7 +252,50 @@ def test_api_email_draft_review_and_send_boundaries(tmp_path: Path) -> None:
     assert review.json()["data"]["reviewed_count"] == 1
     assert send.json()["data"]["blocked_count"] == 1
     assert logs.json()["data"]["total"] == 1
-    assert logs.json()["data"]["items"][0]["status"] == "blocked"
+    send_log = logs.json()["data"]["items"][0]
+    assert send_log["status"] == "blocked"
+    assert send_log["send_mode"] == "permission_check"
+    assert send_log["send_label"] == "权限检查"
+    assert send_log["is_formal_send_success"] is False
+    assert reviewed_drafts.json()["data"]["items"][0]["business_status"] == "ready_to_send"
+
+
+def test_api_dashboard_summary_reads_persisted_database_rows(tmp_path: Path) -> None:
+    db_path = tmp_path / "api.sqlite"
+    with initialize_database(db_path) as connection:
+        insert_task(
+            connection,
+            task_id="task-dashboard",
+            task_type="pubmed_search",
+            status="success",
+            query="single-cell cancer",
+            started_at="2026-09-03T10:00:00",
+            finished_at="2026-09-03T10:00:01",
+        )
+        insert_pubmed_lead(
+            connection,
+            make_lead(manual_review_required=True),
+            task_id="task-dashboard",
+        )
+        insert_email_draft(
+            connection,
+            {"lead_id": "lead-1", "draft_status": "review_pending"},
+            draft_id="draft-dashboard",
+        )
+    client = make_client(db_path)
+
+    response = client.get("/api/dashboard/summary")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["error"] is None
+    assert body["data"]["lead_count"] == 1
+    assert body["data"]["pending_review_count"] == 1
+    assert body["data"]["ready_to_send_count"] == 0
+    assert body["data"]["manual_review_lead_count"] == 1
+    assert body["data"]["recent_tasks"][0]["task_id"] == "task-dashboard"
+    assert body["data"]["recent_tasks"][0]["lead_count"] == 1
 
 
 def test_api_pubmed_search_runs_service_and_persists_results(tmp_path: Path, monkeypatch) -> None:

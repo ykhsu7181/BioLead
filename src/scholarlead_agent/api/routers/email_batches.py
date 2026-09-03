@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Mapping, Sequence
 import json
 import sqlite3
 from typing import Any
@@ -21,6 +23,10 @@ from scholarlead_agent.services.email_batch_service import (
     generate_batch_email_drafts,
     send_batch_reviewed_emails,
 )
+from scholarlead_agent.services.email_business_status import (
+    describe_send_record,
+    resolve_email_business_status,
+)
 from scholarlead_agent.services.email_reviewer_workspace import (
     build_email_reviewer_workspace,
 )
@@ -39,7 +45,14 @@ def list_email_drafts(
         connection,
         "SELECT * FROM email_drafts ORDER BY updated_at DESC, draft_id DESC",
     )
-    items = [_draft_row_to_dict(row) for row in rows]
+    send_rows = fetch_all(connection, "SELECT draft_id, status, payload_json FROM email_send_logs")
+    sends_by_draft: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for send_row in send_rows:
+        sends_by_draft[str(send_row["draft_id"] or "")].append(dict(send_row))
+    items = [
+        _draft_row_to_dict(row, sends_by_draft.get(str(row["draft_id"]), ()))
+        for row in rows
+    ]
     start = max(page - 1, 0) * page_size
     end = start + page_size
     return api_success({"items": items[start:end], "page": page, "page_size": page_size, "total": len(items)})
@@ -53,7 +66,12 @@ def get_email_draft(
     row = fetch_one(connection, "SELECT * FROM email_drafts WHERE draft_id = ?", (draft_id,))
     if row is None:
         raise ApiError("EMAIL_DRAFT_NOT_FOUND", "Email draft not found", 404)
-    return api_success(_draft_row_to_dict(row))
+    send_rows = fetch_all(
+        connection,
+        "SELECT draft_id, status, payload_json FROM email_send_logs WHERE draft_id = ?",
+        (draft_id,),
+    )
+    return api_success(_draft_row_to_dict(row, [dict(send_row) for send_row in send_rows]))
 
 
 @router.post("/email-drafts/batch-generate")
@@ -125,10 +143,17 @@ def list_email_send_logs(
     return api_success({"items": items[start:end], "page": page, "page_size": page_size, "total": len(items)})
 
 
-def _draft_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
+def _draft_row_to_dict(
+    row: sqlite3.Row,
+    send_records: Sequence[Mapping[str, Any]] = (),
+) -> dict[str, Any]:
     data = dict(row)
     payload = json.loads(data.pop("payload_json", "{}") or "{}")
     data["payload"] = payload
+    data["business_status"] = resolve_email_business_status(
+        data.get("draft_status"),
+        send_records,
+    )
     data["reviewer_workspace"] = build_email_reviewer_workspace({**payload, **data})
     return data
 
@@ -138,4 +163,5 @@ def _send_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     data["permission_blockers"] = json.loads(data.pop("permission_blockers_json", "[]") or "[]")
     data["permission_warnings"] = json.loads(data.pop("permission_warnings_json", "[]") or "[]")
     data["payload"] = json.loads(data.pop("payload_json", "{}") or "{}")
+    data.update(describe_send_record(data))
     return data

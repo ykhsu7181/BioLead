@@ -14,6 +14,7 @@ from scholarlead_agent.api.errors import (
 from scholarlead_agent.api.routers import (
     agent,
     conversations,
+    dashboard,
     email_batches,
     jobs,
     leads,
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, unhandled_error_handler)
     app.include_router(agent.router)
     app.include_router(conversations.router)
+    app.include_router(dashboard.router)
     app.include_router(tasks.router)
     app.include_router(pubmed.router)
     app.include_router(leads.router)
