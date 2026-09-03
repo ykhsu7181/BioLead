@@ -1,7 +1,13 @@
 <script setup>
 import { Inbox } from "@lucide/vue";
+import DashboardEmptyState from "./DashboardEmptyState.vue";
+import PendingActionRow from "./PendingActionRow.vue";
 
 defineProps({
+  actions: {
+    type: Array,
+    default: () => []
+  },
   loading: {
     type: Boolean,
     default: false
@@ -17,10 +23,14 @@ defineProps({
     <div v-if="loading" class="panel-loading" aria-label="待处理事项加载中">
       <span v-for="index in 3" :key="index"></span>
     </div>
-    <div v-else class="panel-empty">
-      <Inbox :size="28" :stroke-width="1.7" aria-hidden="true" />
-      <p>暂无待处理事项</p>
+    <div v-else-if="actions.length" class="action-list">
+      <PendingActionRow
+        v-for="action in actions"
+        :key="action.id"
+        v-bind="action"
+      />
     </div>
+    <DashboardEmptyState v-else message="当前没有需要处理的事项" :icon="Inbox" />
   </section>
 </template>
 
@@ -45,19 +55,6 @@ defineProps({
   line-height: 1.3;
 }
 
-.panel-empty {
-  display: grid;
-  min-height: 300px;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  color: var(--bl-text-muted);
-}
-
-.panel-empty p {
-  margin: 0;
-}
-
 .panel-loading {
   display: grid;
   gap: 14px;
@@ -68,5 +65,9 @@ defineProps({
   height: 72px;
   border-radius: var(--bl-radius-sm);
   background: var(--bl-bg-subtle);
+}
+
+.action-list {
+  min-width: 0;
 }
 </style>

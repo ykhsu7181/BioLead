@@ -1,7 +1,13 @@
 <script setup>
 import { ClipboardList } from "@lucide/vue";
+import DashboardEmptyState from "./DashboardEmptyState.vue";
+import RecentTaskRow from "./RecentTaskRow.vue";
 
 defineProps({
+  tasks: {
+    type: Array,
+    default: () => []
+  },
   loading: {
     type: Boolean,
     default: false
@@ -17,10 +23,16 @@ defineProps({
     <div v-if="loading" class="panel-loading" aria-label="最近任务加载中">
       <span v-for="index in 4" :key="index"></span>
     </div>
-    <div v-else class="panel-empty">
-      <ClipboardList :size="28" :stroke-width="1.7" aria-hidden="true" />
-      <p>暂无任务</p>
+    <div v-else-if="tasks.length" class="task-list">
+      <RecentTaskRow v-for="task in tasks" :key="task.task_id" :task="task" />
     </div>
+    <DashboardEmptyState
+      v-else
+      message="暂无客户检索任务"
+      :icon="ClipboardList"
+      action-label="找研究客户"
+      :action-to="{ name: 'workbench', query: { view: 'agent' } }"
+    />
   </section>
 </template>
 
@@ -45,19 +57,6 @@ defineProps({
   line-height: 1.3;
 }
 
-.panel-empty {
-  display: grid;
-  min-height: 300px;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  color: var(--bl-text-muted);
-}
-
-.panel-empty p {
-  margin: 0;
-}
-
 .panel-loading {
   display: grid;
   gap: 14px;
@@ -68,5 +67,9 @@ defineProps({
   height: 58px;
   border-radius: var(--bl-radius-sm);
   background: var(--bl-bg-subtle);
+}
+
+.task-list {
+  min-width: 0;
 }
 </style>

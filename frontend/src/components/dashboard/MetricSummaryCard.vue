@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from "vue";
+
+const props = defineProps({
   title: {
     type: String,
     required: true
@@ -29,6 +31,13 @@ defineProps({
     default: false
   }
 });
+
+const displayedValue = computed(() => {
+  if (props.value === null || props.value === undefined || props.value === "") {
+    return "—";
+  }
+  return typeof props.value === "number" ? props.value.toLocaleString("zh-CN") : props.value;
+});
 </script>
 
 <template>
@@ -40,7 +49,7 @@ defineProps({
       <div class="metric-copy">
         <span class="metric-title">{{ title }}</span>
         <span v-if="loading" class="metric-skeleton" aria-label="加载中"></span>
-        <strong v-else class="metric-value">{{ value ?? "—" }}</strong>
+        <strong v-else class="metric-value">{{ displayedValue }}</strong>
       </div>
     </div>
     <RouterLink class="metric-action" :to="actionTo">

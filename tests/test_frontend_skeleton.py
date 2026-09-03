@@ -23,8 +23,16 @@ def test_vue_frontend_skeleton_files_exist() -> None:
         "src/components/navigation/SidebarNavItem.vue",
         "src/components/navigation/SidebarToggleButton.vue",
         "src/components/dashboard/MetricSummaryCard.vue",
+        "src/components/dashboard/RecentTaskRow.vue",
         "src/components/dashboard/RecentTasksPanel.vue",
+        "src/components/dashboard/PendingActionRow.vue",
         "src/components/dashboard/PendingActionsPanel.vue",
+        "src/components/dashboard/StatusBadge.vue",
+        "src/components/dashboard/DashboardEmptyState.vue",
+        "src/components/dashboard/DashboardErrorState.vue",
+        "src/api/client.js",
+        "src/api/dashboard.js",
+        "src/constants/status.js",
         "src/styles/tokens.css",
         "src/styles/base.css",
         "src/styles/layout.css",
@@ -162,3 +170,45 @@ def test_frontend_dashboard_has_desktop_layout_and_persisted_sidebar() -> None:
     assert "72px" in tokens
     assert "--bl-radius-lg: 8px" in tokens
     assert "min-width: 1280px" in base
+
+
+def test_frontend_dashboard_loads_real_summary_and_handles_ui_states() -> None:
+    dashboard = (FRONTEND / "src" / "views" / "DashboardView.vue").read_text(
+        encoding="utf-8"
+    )
+    dashboard_api = (FRONTEND / "src" / "api" / "dashboard.js").read_text(
+        encoding="utf-8"
+    )
+    error_state = (
+        FRONTEND / "src" / "components" / "dashboard" / "DashboardErrorState.vue"
+    ).read_text(encoding="utf-8")
+    recent_tasks = (
+        FRONTEND / "src" / "components" / "dashboard" / "RecentTasksPanel.vue"
+    ).read_text(encoding="utf-8")
+    pending_actions = (
+        FRONTEND / "src" / "components" / "dashboard" / "PendingActionsPanel.vue"
+    ).read_text(encoding="utf-8")
+
+    assert "/api/dashboard/summary" in dashboard_api
+    assert "getDashboardSummary" in dashboard
+    assert "onMounted(loadSummary)" in dashboard
+    assert "pending_review_count" in dashboard
+    assert "ready_to_send_count" in dashboard
+    assert "manual_review_lead_count" in dashboard
+    assert "暂时无法加载首页数据" in error_state
+    assert "重新加载" in error_state
+    assert "暂无客户检索任务" in recent_tasks
+    assert "当前没有需要处理的事项" in pending_actions
+    assert "1,240" not in dashboard
+    assert "86" not in dashboard
+
+
+def test_frontend_task_status_mapping_is_centralized() -> None:
+    status = (FRONTEND / "src" / "constants" / "status.js").read_text(encoding="utf-8")
+    badge = (
+        FRONTEND / "src" / "components" / "dashboard" / "StatusBadge.vue"
+    ).read_text(encoding="utf-8")
+
+    for expected in ["已完成", "处理中", "等待处理", "失败", "已取消", "已阻止"]:
+        assert expected in status
+    assert "getTaskStatus" in badge

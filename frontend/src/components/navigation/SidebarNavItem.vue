@@ -46,6 +46,7 @@ defineProps({
     :to="to"
     :title="collapsed ? label : undefined"
     :aria-label="collapsed ? label : undefined"
+    :aria-current="active ? 'page' : undefined"
   >
     <component :is="icon" :size="20" :stroke-width="1.9" aria-hidden="true" />
     <span v-if="!collapsed">{{ label }}</span>
