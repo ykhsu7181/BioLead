@@ -35,7 +35,7 @@ def resolve_email_business_status(
     """Return the shared business status for one draft and its send history."""
 
     records = list(send_records)
-    if any(_clean(record.get("status")) == "sent" for record in records):
+    if any(describe_send_record(record)["is_formal_send_success"] for record in records):
         return EMAIL_STATUS_SENT
 
     normalized_status = _clean(draft_status)

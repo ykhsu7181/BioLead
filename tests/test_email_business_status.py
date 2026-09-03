@@ -25,19 +25,33 @@ def test_resolve_email_business_status_uses_shared_review_rules() -> None:
     assert resolve_email_business_status("review_rejected") == EMAIL_STATUS_REJECTED
 
 
-def test_sent_record_takes_draft_out_of_ready_to_send_regardless_of_mode() -> None:
+def test_only_formal_sent_record_takes_draft_out_of_ready_to_send() -> None:
     blocked = [{"status": "blocked", "payload_json": "{}"}]
-    failed = [{"status": "failed", "payload_json": "{}"}]
+    real_failed = [
+        {
+            "status": "failed",
+            "payload_json": json.dumps({"send_mode": "real_recipient"}),
+        }
+    ]
     test_sent = [
         {
             "status": "sent",
             "payload_json": json.dumps({"send_mode": "test_recipient"}),
         }
     ]
+    unknown_sent = [{"status": "sent", "payload_json": "{}"}]
+    formal_sent = [
+        {
+            "status": "sent",
+            "payload_json": json.dumps({"send_mode": "real_recipient"}),
+        }
+    ]
 
     assert resolve_email_business_status("review_approved", blocked) == EMAIL_STATUS_READY_TO_SEND
-    assert resolve_email_business_status("review_approved", failed) == EMAIL_STATUS_READY_TO_SEND
-    assert resolve_email_business_status("review_approved", test_sent) == EMAIL_STATUS_SENT
+    assert resolve_email_business_status("review_approved", real_failed) == EMAIL_STATUS_READY_TO_SEND
+    assert resolve_email_business_status("review_approved", test_sent) == EMAIL_STATUS_READY_TO_SEND
+    assert resolve_email_business_status("review_approved", unknown_sent) == EMAIL_STATUS_READY_TO_SEND
+    assert resolve_email_business_status("review_approved", formal_sent) == EMAIL_STATUS_SENT
 
 
 def test_send_record_description_distinguishes_test_formal_and_legacy() -> None:
@@ -66,6 +80,7 @@ def test_business_status_summary_counts_drafts_and_only_formal_sends(tmp_path: P
             ("blocked", "review_approved"),
             ("failed", "review_approved"),
             ("test-sent", "review_approved"),
+            ("unknown-sent", "review_approved"),
             ("formal-sent", "review_approved"),
             ("rejected", "review_rejected"),
         ]:
@@ -79,6 +94,7 @@ def test_business_status_summary_counts_drafts_and_only_formal_sends(tmp_path: P
             ("send-blocked", "blocked", "blocked", "permission_check"),
             ("send-failed", "failed", "failed", "real_recipient"),
             ("send-test", "test-sent", "sent", "test_recipient"),
+            ("send-unknown", "unknown-sent", "sent", None),
             ("send-formal", "formal-sent", "sent", "real_recipient"),
         ]:
             insert_email_send_log(
@@ -94,7 +110,7 @@ def test_business_status_summary_counts_drafts_and_only_formal_sends(tmp_path: P
         summary = summarize_email_business_statuses(connection)
 
     assert summary[EMAIL_STATUS_PENDING_REVIEW] == 2
-    assert summary[EMAIL_STATUS_READY_TO_SEND] == 3
-    assert summary[EMAIL_STATUS_SENT] == 2
+    assert summary[EMAIL_STATUS_READY_TO_SEND] == 5
+    assert summary[EMAIL_STATUS_SENT] == 1
     assert summary[EMAIL_STATUS_REJECTED] == 1
     assert summary["formal_sent_count"] == 1

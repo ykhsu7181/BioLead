@@ -10,6 +10,7 @@ from scholarlead_agent.api.dependencies import get_database
 from scholarlead_agent.background_jobs import JOB_TYPE_BATCH_DRAFT
 from scholarlead_agent.database import (
     insert_email_draft,
+    insert_email_send_log,
     initialize_database,
     insert_pubmed_lead,
     insert_task,
@@ -282,6 +283,34 @@ def test_api_dashboard_summary_reads_persisted_database_rows(tmp_path: Path) -> 
             {"lead_id": "lead-1", "draft_status": "review_pending"},
             draft_id="draft-dashboard",
         )
+        insert_email_draft(
+            connection,
+            {"lead_id": "lead-1", "draft_status": "review_approved"},
+            draft_id="draft-test-sent",
+        )
+        insert_email_send_log(
+            connection,
+            {
+                "send_id": "send-test-dashboard",
+                "draft_id": "draft-test-sent",
+                "status": "sent",
+                "send_mode": "test_recipient",
+            },
+        )
+        insert_email_draft(
+            connection,
+            {"lead_id": "lead-1", "draft_status": "review_approved"},
+            draft_id="draft-formal-sent",
+        )
+        insert_email_send_log(
+            connection,
+            {
+                "send_id": "send-formal-dashboard",
+                "draft_id": "draft-formal-sent",
+                "status": "sent",
+                "send_mode": "real_recipient",
+            },
+        )
     client = make_client(db_path)
 
     response = client.get("/api/dashboard/summary")
@@ -292,7 +321,7 @@ def test_api_dashboard_summary_reads_persisted_database_rows(tmp_path: Path) -> 
     assert body["error"] is None
     assert body["data"]["lead_count"] == 1
     assert body["data"]["pending_review_count"] == 1
-    assert body["data"]["ready_to_send_count"] == 0
+    assert body["data"]["ready_to_send_count"] == 1
     assert body["data"]["manual_review_lead_count"] == 1
     assert body["data"]["recent_tasks"][0]["task_id"] == "task-dashboard"
     assert body["data"]["recent_tasks"][0]["lead_count"] == 1
