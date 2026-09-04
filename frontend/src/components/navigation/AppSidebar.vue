@@ -12,7 +12,7 @@ const collapsed = ref(globalThis.localStorage?.getItem(STORAGE_KEY) === "true");
 
 const navItems = [
   { label: "首页", icon: House, to: { name: "dashboard" }, view: "dashboard" },
-  { label: "客户", icon: UserRound, to: { name: "workbench", query: { view: "leads" } }, view: "leads" },
+  { label: "客户", icon: UserRound, to: { name: "leads" }, view: "leads" },
   { label: "邮件", icon: Mail, to: { name: "workbench", query: { view: "drafts" } }, view: "drafts" },
   { label: "任务", icon: ClipboardCheck, to: { name: "workbench", query: { view: "jobs" } }, view: "jobs" },
   { label: "设置", icon: Settings, disabled: true, view: "settings" }
@@ -23,6 +23,9 @@ const sidebarLabel = computed(() => (collapsed.value ? "BioLead 导航" : "主�
 function isActive(item) {
   if (item.view === "dashboard") {
     return route.name === "dashboard";
+  }
+  if (item.view === "leads") {
+    return route.name === "leads";
   }
   return route.name === "workbench" && route.query.view === item.view;
 }
@@ -102,11 +105,9 @@ watch(collapsed, (value) => {
 }
 
 .collapsed .sidebar-header {
+  min-height: 80px;
+  flex-direction: column;
   justify-content: center;
-}
-
-.collapsed .sidebar-header > :last-child {
-  display: none;
 }
 
 .find-button {

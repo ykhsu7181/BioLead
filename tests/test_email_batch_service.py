@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from scholarlead_agent.ai.email_drafts import EmailDraftInput, build_email_draft
 from scholarlead_agent.config import AppConfig
 from scholarlead_agent.database import (
@@ -9,6 +11,7 @@ from scholarlead_agent.database import (
     initialize_database,
     insert_email_draft,
     insert_pubmed_lead,
+    insert_task,
 )
 from scholarlead_agent.email_review import (
     EmailReviewDecision,
@@ -162,6 +165,20 @@ def test_batch_generate_email_drafts_persists_drafts_and_job(tmp_path: Path) -> 
     assert job["job_type"] == "BatchDraftJob"
 
 
+def test_batch_generate_rejects_more_leads_than_max_items(tmp_path: Path) -> None:
+    with initialize_database(tmp_path / "batch.sqlite") as connection:
+        insert_pubmed_lead(connection, make_lead("lead-1"))
+        insert_pubmed_lead(connection, make_lead("lead-2"))
+
+        with pytest.raises(ValueError, match="must not exceed max_items"):
+            generate_batch_email_drafts(
+                connection,
+                lead_ids=["lead-1", "lead-2"],
+                max_items=1,
+                service=FakeDraftService(),
+            )
+
+
 def test_batch_regeneration_creates_a_new_version_without_overwriting_history(tmp_path: Path) -> None:
     with initialize_database(tmp_path / "batch.sqlite") as connection:
         insert_pubmed_lead(connection, make_lead("lead-1"))
@@ -183,6 +200,31 @@ def test_batch_regeneration_creates_a_new_version_without_overwriting_history(tm
     assert first.draft_ids == ["draft-lead-1"]
     assert second.draft_ids == ["draft-lead-1-v2"]
     assert [row["draft_id"] for row in drafts] == ["draft-lead-1", "draft-lead-1-v2"]
+
+
+def test_batch_generate_by_historical_task_uses_discovery_membership(
+    tmp_path: Path,
+) -> None:
+    with initialize_database(tmp_path / "batch.sqlite") as connection:
+        for task_id in ("task-a", "task-b"):
+            insert_task(
+                connection,
+                task_id=task_id,
+                task_type="pubmed_search",
+                status="success",
+            )
+        insert_pubmed_lead(connection, make_lead("lead-1"), task_id="task-a")
+        insert_pubmed_lead(connection, make_lead("lead-1"), task_id="task-b")
+
+        result = generate_batch_email_drafts(
+            connection,
+            task_id="task-a",
+            service=FakeDraftService(),
+            job_id="job-historical-task",
+        )
+
+    assert result.success_count == 1
+    assert result.draft_ids == ["draft-lead-1"]
 
 
 def test_batch_review_updates_drafts_and_records_audit(tmp_path: Path) -> None:

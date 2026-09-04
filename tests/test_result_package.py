@@ -360,6 +360,15 @@ def test_result_package_can_be_built_from_database_task(tmp_path: Path) -> None:
         for paper in result.papers:
             insert_pubmed_paper(connection, paper, task_id=result.task_id)
         insert_pubmed_lead(connection, lead, task_id=result.task_id)
+        insert_task(
+            connection,
+            task_id="later-task",
+            task_type="pubmed",
+            status="success",
+        )
+        for paper in result.papers:
+            insert_pubmed_paper(connection, paper, task_id="later-task")
+        insert_pubmed_lead(connection, lead, task_id="later-task")
         insert_email_draft(connection, reviewed, draft_id="draft-1")
         insert_email_review_record(connection, email_send_result_to_dict(send_result)["audit_record"])
         insert_email_send_log(connection, email_send_result_to_dict(send_result))
@@ -372,5 +381,7 @@ def test_result_package_can_be_built_from_database_task(tmp_path: Path) -> None:
         )
 
     assert package.package_id == "TASK_pubmed_stage33"
+    assert package.row_counts["customers"] == 1
+    assert package.row_counts["papers"] == len(result.papers)
     assert read_csv(package.paths.email_send_logs_csv)[0]["Send_ID"] == "send-1"
     assert package.row_counts["email_send_logs"] == 1

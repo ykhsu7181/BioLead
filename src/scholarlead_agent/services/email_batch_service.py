@@ -400,7 +400,9 @@ def _select_leads(
     max_items: int,
 ) -> list[PubMedLead]:
     if lead_ids:
-        normalized_ids = _dedupe_required_ids(lead_ids, "lead_ids")[:max_items]
+        normalized_ids = _dedupe_required_ids(lead_ids, "lead_ids")
+        if len(normalized_ids) > max_items:
+            raise ValueError("lead_ids count must not exceed max_items")
         placeholders = ",".join("?" for _ in normalized_ids)
         rows = fetch_all(
             connection,
@@ -417,9 +419,11 @@ def _select_leads(
         rows = fetch_all(
             connection,
             """
-            SELECT * FROM leads
-            WHERE task_id = ?
-            ORDER BY updated_at DESC, lead_id DESC
+            SELECT l.*
+            FROM lead_discoveries AS d
+            JOIN leads AS l ON l.lead_id = d.lead_id
+            WHERE d.task_id = ?
+            ORDER BY d.discovered_at DESC, l.lead_id DESC
             LIMIT ?
             """,
             (task_id, max_items),

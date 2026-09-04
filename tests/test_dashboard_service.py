@@ -2,7 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from scholarlead_agent.database import initialize_database, insert_email_draft, insert_task
+from scholarlead_agent.database import (
+    initialize_database,
+    insert_email_draft,
+    insert_task,
+    record_lead_discovery,
+)
 from scholarlead_agent.services.dashboard_service import get_dashboard_summary
 
 
@@ -45,6 +50,14 @@ def test_dashboard_summary_uses_real_counts_and_latest_five_tasks(tmp_path: Path
                     "2026-09-03T10:00:00",
                 ),
             )
+            record_lead_discovery(
+                connection,
+                task_id=task_id,
+                lead_id=lead_id,
+                source="pubmed",
+                discovered_at="2026-09-03T10:00:00",
+                discovery_status="new_record",
+            )
         insert_email_draft(connection, {"draft_status": "review_pending"}, draft_id="pending")
         insert_email_draft(connection, {"draft_status": "changes_requested"}, draft_id="changes")
         insert_email_draft(connection, {"draft_status": "review_approved"}, draft_id="ready")
@@ -61,6 +74,42 @@ def test_dashboard_summary_uses_real_counts_and_latest_five_tasks(tmp_path: Path
     assert summary.recent_tasks[0].lead_count == 2
     assert summary.recent_tasks[1].task_id == "task-5"
     assert summary.recent_tasks[1].lead_count == 1
+
+
+def test_dashboard_historical_count_survives_latest_task_pointer_change(
+    tmp_path: Path,
+) -> None:
+    with initialize_database(tmp_path / "dashboard.sqlite") as connection:
+        for task_id in ("task-a", "task-b"):
+            insert_task(
+                connection,
+                task_id=task_id,
+                task_type="pubmed_search",
+                status="success",
+            )
+        connection.execute(
+            """
+            INSERT INTO leads (
+                lead_id, task_id, pi_full_name, payload_json, created_at, updated_at
+            ) VALUES ('lead-x', 'task-b', 'PI X', '{}', ?, ?)
+            """,
+            ("2026-09-03T10:00:00", "2026-09-03T10:00:00"),
+        )
+        for task_id, status in (("task-a", "new_record"), ("task-b", "repeat_record")):
+            record_lead_discovery(
+                connection,
+                task_id=task_id,
+                lead_id="lead-x",
+                source="pubmed",
+                discovered_at=f"2026-09-03T10:0{1 if task_id == 'task-a' else 2}:00",
+                discovery_status=status,
+            )
+
+        summary = get_dashboard_summary(connection)
+        counts = {task.task_id: task.lead_count for task in summary.recent_tasks}
+
+    assert counts["task-a"] == 1
+    assert counts["task-b"] == 1
 
 
 def test_dashboard_summary_rejects_invalid_recent_task_limit(tmp_path: Path) -> None:

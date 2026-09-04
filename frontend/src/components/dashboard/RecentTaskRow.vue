@@ -44,7 +44,11 @@ function formatTime(value) {
 </script>
 
 <template>
-  <article class="recent-task-row">
+  <RouterLink
+    class="recent-task-row"
+    :to="{ name: 'leads', query: { scope: 'current', task_id: props.task.task_id } }"
+    :aria-label="`查看任务 ${props.task.query || '未命名检索任务'} 的客户`"
+  >
     <span class="task-icon" aria-hidden="true">
       <Search :size="20" :stroke-width="1.9" />
     </span>
@@ -59,7 +63,7 @@ function formatTime(value) {
       <StatusBadge :status="props.task.status" />
       <time>{{ formatTime(props.task.finished_at || props.task.started_at) }}</time>
     </div>
-  </article>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -74,6 +78,10 @@ function formatTime(value) {
 
 .recent-task-row:last-child {
   border-bottom: 0;
+}
+
+.recent-task-row:hover .task-copy h3 {
+  color: var(--bl-primary);
 }
 
 .task-icon {

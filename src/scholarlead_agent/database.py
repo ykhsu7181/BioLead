@@ -29,7 +29,13 @@ from scholarlead_agent.pubmed_models import PubMedLead, PubMedPaper
 from scholarlead_agent.unified_models import EvidenceRecord
 
 
-DATABASE_SCHEMA_VERSION = 5
+DATABASE_SCHEMA_VERSION = 6
+
+LEAD_DISCOVERY_STATUSES = {
+    "new_record",
+    "repeat_record",
+    "legacy_unknown",
+}
 
 EXPECTED_TABLES = {
     "schema_migrations",
@@ -38,11 +44,13 @@ EXPECTED_TABLES = {
     "conversation_state",
     "tasks",
     "papers",
+    "paper_discoveries",
     "researchers",
     "organizations",
     "contacts",
     "funding_records",
     "leads",
+    "lead_discoveries",
     "evidence_records",
     "email_drafts",
     "email_reviews",
@@ -80,16 +88,23 @@ def initialize_database(path: Path | str) -> sqlite3.Connection:
 def apply_schema(connection: sqlite3.Connection) -> None:
     """Apply the current SQLite schema idempotently."""
 
-    connection.executescript(_SCHEMA_SQL)
-    connection.execute(f"PRAGMA user_version = {DATABASE_SCHEMA_VERSION}")
-    connection.execute(
-        """
-        INSERT OR IGNORE INTO schema_migrations(version, applied_at)
-        VALUES (?, ?)
-        """,
-        (DATABASE_SCHEMA_VERSION, _now()),
-    )
-    connection.commit()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        _execute_schema_script(connection, _SCHEMA_SQL)
+        _backfill_discovery_history(connection)
+        _validate_discovery_history(connection)
+        connection.execute(f"PRAGMA user_version = {DATABASE_SCHEMA_VERSION}")
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO schema_migrations(version, applied_at)
+            VALUES (?, ?)
+            """,
+            (DATABASE_SCHEMA_VERSION, _now()),
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def get_schema_version(connection: sqlite3.Connection) -> int:
@@ -273,6 +288,7 @@ def insert_task(
     started_at: str | None = None,
     finished_at: str | None = None,
     run_report_path: str | None = None,
+    _commit: bool = True,
 ) -> None:
     """Insert or update one task summary."""
 
@@ -312,7 +328,8 @@ def insert_task(
             now,
         ),
     )
-    connection.commit()
+    if _commit:
+        connection.commit()
 
 
 def insert_pubmed_paper(
@@ -320,21 +337,24 @@ def insert_pubmed_paper(
     paper: PubMedPaper,
     *,
     task_id: str | None = None,
+    discovered_at: str | None = None,
+    _commit: bool = True,
 ) -> None:
     """Insert or update one PubMed paper summary."""
 
     paper_id = f"pubmed:{paper.pmid}"
     source_id = paper.pmid
     now = _now()
-    connection.execute(
-        """
-        INSERT INTO papers (
+    try:
+        connection.execute(
+            """
+            INSERT INTO papers (
             paper_id, task_id, source, source_id, pmid, doi, title, abstract,
             journal, publisher, publication_date, publication_year, authors_json,
             organizations_json, source_url, raw_record_path, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(paper_id) DO UPDATE SET
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(paper_id) DO UPDATE SET
             task_id = excluded.task_id,
             doi = excluded.doi,
             title = excluded.title,
@@ -347,29 +367,44 @@ def insert_pubmed_paper(
             source_url = excluded.source_url,
             raw_record_path = excluded.raw_record_path,
             updated_at = excluded.updated_at
-        """,
-        (
-            paper_id,
-            task_id,
-            paper.source,
-            source_id,
-            paper.pmid,
-            paper.doi,
-            paper.title,
-            paper.abstract,
-            paper.journal,
-            None,
-            paper.publication_date,
-            paper.publication_year,
-            _json([author.full_name for author in paper.authors]),
-            _json(paper.affiliations),
-            paper.source_url,
-            paper.raw_record_path,
-            now,
-            now,
-        ),
-    )
-    connection.commit()
+            """,
+            (
+                paper_id,
+                task_id,
+                paper.source,
+                source_id,
+                paper.pmid,
+                paper.doi,
+                paper.title,
+                paper.abstract,
+                paper.journal,
+                None,
+                paper.publication_date,
+                paper.publication_year,
+                _json([author.full_name for author in paper.authors]),
+                _json(paper.affiliations),
+                paper.source_url,
+                paper.raw_record_path,
+                now,
+                now,
+            ),
+        )
+        if task_id is not None:
+            record_paper_discovery(
+                connection,
+                task_id=task_id,
+                paper_id=paper_id,
+                source=paper.source,
+                discovered_at=discovered_at or now,
+                source_record_id=source_id,
+                _commit=False,
+            )
+        if _commit:
+            connection.commit()
+    except Exception:
+        if _commit:
+            connection.rollback()
+        raise
 
 
 def insert_pubmed_lead(
@@ -377,20 +412,27 @@ def insert_pubmed_lead(
     lead: PubMedLead,
     *,
     task_id: str | None = None,
+    discovered_at: str | None = None,
+    _commit: bool = True,
 ) -> None:
     """Insert or update one PubMed lead summary."""
 
     now = _now()
-    connection.execute(
-        """
-        INSERT INTO leads (
+    lead_exists = connection.execute(
+        "SELECT 1 FROM leads WHERE lead_id = ?",
+        (lead.lead_id,),
+    ).fetchone() is not None
+    try:
+        connection.execute(
+            """
+            INSERT INTO leads (
             lead_id, task_id, pi_full_name, verified_email, email_status,
             institution, country, priority, lead_score, pmid, doi, data_quality,
             manual_review_required, raw_affiliation, payload_json, created_at,
             updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(lead_id) DO UPDATE SET
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(lead_id) DO UPDATE SET
             task_id = excluded.task_id,
             pi_full_name = excluded.pi_full_name,
             verified_email = excluded.verified_email,
@@ -406,28 +448,187 @@ def insert_pubmed_lead(
             raw_affiliation = excluded.raw_affiliation,
             payload_json = excluded.payload_json,
             updated_at = excluded.updated_at
+            """,
+            (
+                lead.lead_id,
+                task_id,
+                lead.pi_full_name,
+                lead.verified_email,
+                lead.email_status,
+                lead.institution,
+                lead.country,
+                lead.priority,
+                lead.lead_score,
+                lead.pmid,
+                lead.doi,
+                lead.data_quality,
+                int(lead.manual_review_required),
+                lead.raw_affiliation,
+                _json(asdict(lead)),
+                now,
+                now,
+            ),
+        )
+        if task_id is not None:
+            record_lead_discovery(
+                connection,
+                task_id=task_id,
+                lead_id=lead.lead_id,
+                source="pubmed",
+                discovered_at=discovered_at or now,
+                discovery_status="repeat_record" if lead_exists else "new_record",
+                source_record_id=lead.pmid,
+                _commit=False,
+            )
+        if _commit:
+            connection.commit()
+    except Exception:
+        if _commit:
+            connection.rollback()
+        raise
+
+
+def record_lead_discovery(
+    connection: sqlite3.Connection,
+    *,
+    task_id: str,
+    lead_id: str,
+    source: str,
+    discovered_at: str,
+    discovery_status: str,
+    source_record_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    _commit: bool = True,
+) -> bool:
+    """Record one idempotent Task-to-Lead discovery relationship."""
+
+    if not _clean(task_id):
+        raise ValueError("task_id cannot be empty")
+    if not _clean(lead_id):
+        raise ValueError("lead_id cannot be empty")
+    if not _clean(source):
+        raise ValueError("source cannot be empty")
+    if not _clean(discovered_at):
+        raise ValueError("discovered_at cannot be empty")
+    if discovery_status not in LEAD_DISCOVERY_STATUSES:
+        raise ValueError(f"unsupported discovery_status: {discovery_status}")
+    cursor = connection.execute(
+        """
+        INSERT OR IGNORE INTO lead_discoveries (
+            task_id, lead_id, source, discovered_at, discovery_status,
+            source_record_id, metadata_json, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            lead.lead_id,
             task_id,
-            lead.pi_full_name,
-            lead.verified_email,
-            lead.email_status,
-            lead.institution,
-            lead.country,
-            lead.priority,
-            lead.lead_score,
-            lead.pmid,
-            lead.doi,
-            lead.data_quality,
-            int(lead.manual_review_required),
-            lead.raw_affiliation,
-            _json(asdict(lead)),
-            now,
-            now,
+            lead_id,
+            source,
+            discovered_at,
+            discovery_status,
+            source_record_id,
+            _json(metadata or {}),
+            _now(),
         ),
     )
-    connection.commit()
+    if _commit:
+        connection.commit()
+    return cursor.rowcount > 0
+
+
+def record_paper_discovery(
+    connection: sqlite3.Connection,
+    *,
+    task_id: str,
+    paper_id: str,
+    source: str,
+    discovered_at: str,
+    source_record_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    _commit: bool = True,
+) -> bool:
+    """Record one idempotent Task-to-Paper discovery relationship."""
+
+    for field_name, value in (
+        ("task_id", task_id),
+        ("paper_id", paper_id),
+        ("source", source),
+        ("discovered_at", discovered_at),
+    ):
+        if not _clean(value):
+            raise ValueError(f"{field_name} cannot be empty")
+    cursor = connection.execute(
+        """
+        INSERT OR IGNORE INTO paper_discoveries (
+            task_id, paper_id, source, discovered_at, source_record_id,
+            metadata_json, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            task_id,
+            paper_id,
+            source,
+            discovered_at,
+            source_record_id,
+            _json(metadata or {}),
+            _now(),
+        ),
+    )
+    if _commit:
+        connection.commit()
+    return cursor.rowcount > 0
+
+
+def fetch_task_lead_ids(
+    connection: sqlite3.Connection,
+    task_id: str,
+) -> list[str]:
+    """Return Lead IDs discovered by one task in stable discovery order."""
+
+    rows = connection.execute(
+        """
+        SELECT lead_id FROM lead_discoveries
+        WHERE task_id = ?
+        ORDER BY discovered_at, lead_id
+        """,
+        (task_id,),
+    ).fetchall()
+    return [str(row["lead_id"]) for row in rows]
+
+
+def fetch_task_paper_ids(
+    connection: sqlite3.Connection,
+    task_id: str,
+) -> list[str]:
+    """Return Paper IDs discovered by one task in stable discovery order."""
+
+    rows = connection.execute(
+        """
+        SELECT paper_id FROM paper_discoveries
+        WHERE task_id = ?
+        ORDER BY discovered_at, paper_id
+        """,
+        (task_id,),
+    ).fetchall()
+    return [str(row["paper_id"]) for row in rows]
+
+
+def fetch_lead_discoveries(
+    connection: sqlite3.Connection,
+    lead_id: str,
+) -> list[dict[str, Any]]:
+    """Return all discovery records for one Lead, newest first."""
+
+    return fetch_all(
+        connection,
+        """
+        SELECT * FROM lead_discoveries
+        WHERE lead_id = ?
+        ORDER BY discovered_at DESC, task_id DESC
+        """,
+        (lead_id,),
+    )
 
 
 def persist_pubmed_run_result(
@@ -437,30 +638,50 @@ def persist_pubmed_run_result(
     """Persist a PubMedRunResult-like object into Stage 24 tables."""
 
     params = result.search_params
-    insert_task(
-        connection,
-        task_id=result.task_id,
-        task_type="pubmed_search",
-        query=params.query,
-        status=result.status,
-        parameters=asdict(params),
-        started_at=result.started_at,
-        finished_at=result.finished_at,
-        run_report_path=str(result.run_report_path),
-    )
-    for paper in result.papers:
-        insert_pubmed_paper(connection, paper, task_id=result.task_id)
-    for lead in result.leads:
-        insert_pubmed_lead(connection, lead, task_id=result.task_id)
-    insert_run_report(
-        connection,
-        report_id=f"{result.task_id}:run_report",
-        task_id=result.task_id,
-        source="pubmed",
-        status=result.status,
-        run_report_path=str(result.run_report_path),
-        report=result.run_report,
-    )
+    discovered_at = result.finished_at or _now()
+    try:
+        insert_task(
+            connection,
+            task_id=result.task_id,
+            task_type="pubmed_search",
+            query=params.query,
+            status=result.status,
+            parameters=asdict(params),
+            started_at=result.started_at,
+            finished_at=result.finished_at,
+            run_report_path=str(result.run_report_path),
+            _commit=False,
+        )
+        for paper in result.papers:
+            insert_pubmed_paper(
+                connection,
+                paper,
+                task_id=result.task_id,
+                discovered_at=discovered_at,
+                _commit=False,
+            )
+        for lead in result.leads:
+            insert_pubmed_lead(
+                connection,
+                lead,
+                task_id=result.task_id,
+                discovered_at=discovered_at,
+                _commit=False,
+            )
+        insert_run_report(
+            connection,
+            report_id=f"{result.task_id}:run_report",
+            task_id=result.task_id,
+            source="pubmed",
+            status=result.status,
+            run_report_path=str(result.run_report_path),
+            report=result.run_report,
+            _commit=False,
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def claim_agent_run_idempotency(
@@ -816,6 +1037,7 @@ def insert_run_report(
     status: str,
     run_report_path: str | None,
     report: dict[str, Any],
+    _commit: bool = True,
 ) -> None:
     """Insert or update one run report summary."""
 
@@ -837,7 +1059,8 @@ def insert_run_report(
             _now(),
         ),
     )
-    connection.commit()
+    if _commit:
+        connection.commit()
 
 
 def fetch_one(
@@ -894,6 +1117,77 @@ def _clean(value: Any) -> str | None:
 
 def _now() -> str:
     return datetime.now().isoformat(timespec="seconds")
+
+
+def _execute_schema_script(connection: sqlite3.Connection, script: str) -> None:
+    """Execute a static SQL script without sqlite3.executescript auto-commits."""
+
+    pending = ""
+    for line in script.splitlines(keepends=True):
+        pending += line
+        if sqlite3.complete_statement(pending):
+            statement = pending.strip()
+            if statement:
+                connection.execute(statement)
+            pending = ""
+    if pending.strip():
+        raise sqlite3.OperationalError("incomplete schema SQL statement")
+
+
+def _backfill_discovery_history(connection: sqlite3.Connection) -> None:
+    """Best-effort backfill from legacy latest-task pointers."""
+
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO lead_discoveries (
+            task_id, lead_id, source, discovered_at, discovery_status,
+            source_record_id, metadata_json, created_at
+        )
+        SELECT
+            task_id, lead_id, 'legacy', COALESCE(created_at, updated_at),
+            'legacy_unknown', pmid, '{}', COALESCE(created_at, updated_at)
+        FROM leads
+        WHERE task_id IS NOT NULL
+        """
+    )
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO paper_discoveries (
+            task_id, paper_id, source, discovered_at, source_record_id,
+            metadata_json, created_at
+        )
+        SELECT
+            task_id, paper_id, 'legacy', COALESCE(created_at, updated_at),
+            pmid, '{}', COALESCE(created_at, updated_at)
+        FROM papers
+        WHERE task_id IS NOT NULL
+        """
+    )
+
+
+def _validate_discovery_history(connection: sqlite3.Connection) -> None:
+    """Ensure every recoverable legacy task pointer has a discovery row."""
+
+    missing_leads = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM leads AS l
+        LEFT JOIN lead_discoveries AS d
+            ON d.task_id = l.task_id AND d.lead_id = l.lead_id
+        WHERE l.task_id IS NOT NULL AND d.lead_id IS NULL
+        """
+    ).fetchone()[0]
+    missing_papers = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM papers AS p
+        LEFT JOIN paper_discoveries AS d
+            ON d.task_id = p.task_id AND d.paper_id = p.paper_id
+        WHERE p.task_id IS NOT NULL AND d.paper_id IS NULL
+        """
+    ).fetchone()[0]
+    if missing_leads or missing_papers:
+        raise RuntimeError("discovery history backfill validation failed")
 
 
 _SCHEMA_SQL = """
@@ -1040,6 +1334,51 @@ CREATE TABLE IF NOT EXISTS leads (
     updated_at TEXT NOT NULL,
     FOREIGN KEY(task_id) REFERENCES tasks(task_id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS lead_discoveries (
+    task_id TEXT NOT NULL,
+    lead_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    discovered_at TEXT NOT NULL,
+    discovery_status TEXT NOT NULL DEFAULT 'legacy_unknown',
+    source_record_id TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(task_id, lead_id),
+    FOREIGN KEY(task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+    FOREIGN KEY(lead_id) REFERENCES leads(lead_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_lead_discoveries_lead_id
+ON lead_discoveries(lead_id);
+
+CREATE INDEX IF NOT EXISTS idx_lead_discoveries_task_id
+ON lead_discoveries(task_id);
+
+CREATE INDEX IF NOT EXISTS idx_lead_discoveries_discovered_at
+ON lead_discoveries(discovered_at);
+
+CREATE TABLE IF NOT EXISTS paper_discoveries (
+    task_id TEXT NOT NULL,
+    paper_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    discovered_at TEXT NOT NULL,
+    source_record_id TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(task_id, paper_id),
+    FOREIGN KEY(task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+    FOREIGN KEY(paper_id) REFERENCES papers(paper_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_paper_discoveries_paper_id
+ON paper_discoveries(paper_id);
+
+CREATE INDEX IF NOT EXISTS idx_paper_discoveries_task_id
+ON paper_discoveries(task_id);
+
+CREATE INDEX IF NOT EXISTS idx_paper_discoveries_discovered_at
+ON paper_discoveries(discovered_at);
 
 CREATE TABLE IF NOT EXISTS evidence_records (
     evidence_id TEXT PRIMARY KEY,

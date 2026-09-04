@@ -67,8 +67,8 @@ def get_dashboard_summary(
             t.finished_at,
             (
                 SELECT COUNT(*)
-                FROM leads AS l
-                WHERE l.task_id = t.task_id
+                FROM lead_discoveries AS d
+                WHERE d.task_id = t.task_id
             ) AS lead_count
         FROM tasks AS t
         ORDER BY COALESCE(t.updated_at, t.created_at) DESC, t.task_id DESC

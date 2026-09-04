@@ -8,7 +8,7 @@ import sqlite3
 from typing import Any
 
 from scholarlead_agent.agent.loop import AgentRunResult
-from scholarlead_agent.database import persist_pubmed_run_result
+from scholarlead_agent.database import fetch_task_lead_ids, persist_pubmed_run_result
 
 
 @dataclass(frozen=True)
@@ -73,11 +73,7 @@ def _persisted_pubmed_lead_ids(
     connection: sqlite3.Connection,
     task_id: str,
 ) -> list[str]:
-    rows = connection.execute(
-        "SELECT lead_id FROM leads WHERE task_id = ? ORDER BY lead_id",
-        (task_id,),
-    ).fetchall()
-    return [str(row["lead_id"]) for row in rows]
+    return sorted(fetch_task_lead_ids(connection, task_id))
 
 
 def _artifacts_from_data(source: str, data: dict[str, Any]) -> list[dict[str, str]]:

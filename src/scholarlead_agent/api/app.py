@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from scholarlead_agent.api.errors import (
     ApiError,
     api_error_handler,
     api_success,
+    request_validation_error_handler,
     unhandled_error_handler,
 )
 from scholarlead_agent.api.routers import (
@@ -41,6 +43,7 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.add_exception_handler(ApiError, api_error_handler)
+    app.add_exception_handler(RequestValidationError, request_validation_error_handler)
     app.add_exception_handler(Exception, unhandled_error_handler)
     app.include_router(agent.router)
     app.include_router(conversations.router)

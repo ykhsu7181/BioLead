@@ -432,6 +432,16 @@ def test_persist_pubmed_run_result_writes_core_tables(tmp_path: Path) -> None:
         )
         paper_count = fetch_one(connection, "SELECT COUNT(*) AS count FROM papers")
         lead_count = fetch_one(connection, "SELECT COUNT(*) AS count FROM leads")
+        lead_discovery = fetch_one(
+            connection,
+            "SELECT * FROM lead_discoveries WHERE task_id = ?",
+            ("pubmed-task-1",),
+        )
+        paper_discovery = fetch_one(
+            connection,
+            "SELECT * FROM paper_discoveries WHERE task_id = ?",
+            ("pubmed-task-1",),
+        )
         report = fetch_one(
             connection,
             "SELECT * FROM run_reports WHERE report_id = ?",
@@ -443,5 +453,10 @@ def test_persist_pubmed_run_result_writes_core_tables(tmp_path: Path) -> None:
     assert params["raw_dir"].endswith("raw")
     assert paper_count == {"count": 1}
     assert lead_count == {"count": 1}
+    assert lead_discovery is not None
+    assert lead_discovery["discovered_at"] == "2026-08-24T10:00:01"
+    assert lead_discovery["discovery_status"] == "new_record"
+    assert paper_discovery is not None
+    assert paper_discovery["discovered_at"] == "2026-08-24T10:00:01"
     assert report is not None
     assert json.loads(report["report_json"])["lead_count"] == 1

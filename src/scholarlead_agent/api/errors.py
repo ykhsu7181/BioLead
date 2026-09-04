@@ -7,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
@@ -42,6 +43,19 @@ def api_error_response(error: ApiError, *, request_id: str | None = None) -> JSO
 
 async def api_error_handler(_: Request, exc: ApiError) -> JSONResponse:
     return api_error_response(exc)
+
+
+async def request_validation_error_handler(
+    _: Request,
+    __: RequestValidationError,
+) -> JSONResponse:
+    return api_error_response(
+        ApiError(
+            code="INVALID_REQUEST",
+            message="Request validation failed.",
+            status_code=422,
+        )
+    )
 
 
 async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:

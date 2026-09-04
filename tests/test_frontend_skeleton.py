@@ -17,6 +17,7 @@ def test_vue_frontend_skeleton_files_exist() -> None:
         "src/router/index.js",
         "src/layouts/AppLayout.vue",
         "src/views/DashboardView.vue",
+        "src/views/LeadsView.vue",
         "src/views/LegacyWorkbenchView.vue",
         "src/components/branding/BioLeadLogo.vue",
         "src/components/navigation/AppSidebar.vue",
@@ -30,9 +31,19 @@ def test_vue_frontend_skeleton_files_exist() -> None:
         "src/components/dashboard/StatusBadge.vue",
         "src/components/dashboard/DashboardEmptyState.vue",
         "src/components/dashboard/DashboardErrorState.vue",
+        "src/components/leads/CurrentTaskBanner.vue",
+        "src/components/leads/LeadBatchActionBar.vue",
+        "src/components/leads/LeadsPagination.vue",
+        "src/components/leads/LeadStatusBadge.vue",
+        "src/components/leads/LeadTable.vue",
+        "src/components/leads/ResearchTopicTags.vue",
         "src/api/client.js",
         "src/api/dashboard.js",
+        "src/api/emailDrafts.js",
+        "src/api/leads.js",
+        "src/api/resultPackages.js",
         "src/constants/status.js",
+        "src/constants/leadStatus.js",
         "src/styles/tokens.css",
         "src/styles/base.css",
         "src/styles/layout.css",
@@ -212,3 +223,58 @@ def test_frontend_task_status_mapping_is_centralized() -> None:
     for expected in ["已完成", "处理中", "等待处理", "失败", "已取消", "已阻止"]:
         assert expected in status
     assert "getTaskStatus" in badge
+
+
+def test_frontend_has_formal_lead_library_route_and_api() -> None:
+    router = (FRONTEND / "src" / "router" / "index.js").read_text(encoding="utf-8")
+    sidebar = (
+        FRONTEND / "src" / "components" / "navigation" / "AppSidebar.vue"
+    ).read_text(encoding="utf-8")
+    leads = (FRONTEND / "src" / "views" / "LeadsView.vue").read_text(
+        encoding="utf-8"
+    )
+    leads_api = (FRONTEND / "src" / "api" / "leads.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'path: "leads"' in router
+    assert 'name: "leads"' in router
+    assert 'to: { name: "leads" }' in sidebar
+    assert "/api/leads/filter-options" in leads_api
+    assert "/api/tasks/" in leads_api
+    assert "本次结果" in leads
+    assert "全部客户" in leads
+    assert "LeadTable" in leads
+    assert "LeadsPagination" in leads
+    assert "raw payload" not in leads.lower()
+
+
+def test_frontend_lead_library_keeps_batch_actions_for_stage_40b5() -> None:
+    leads = (FRONTEND / "src" / "views" / "LeadsView.vue").read_text(
+        encoding="utf-8"
+    )
+
+    email_api = (FRONTEND / "src" / "api" / "emailDrafts.js").read_text(
+        encoding="utf-8"
+    )
+    package_api = (FRONTEND / "src" / "api" / "resultPackages.js").read_text(
+        encoding="utf-8"
+    )
+    table = (
+        FRONTEND / "src" / "components" / "leads" / "LeadTable.vue"
+    ).read_text(encoding="utf-8")
+    action_bar = (
+        FRONTEND / "src" / "components" / "leads" / "LeadBatchActionBar.vue"
+    ).read_text(encoding="utf-8")
+
+    assert "生成邮件" in action_bar
+    assert "导出本次结果" in leads
+    assert "generateBatchEmailDrafts" in leads
+    assert "/api/email-drafts/batch-generate" in email_api
+    assert "new Set(leadIds)" in email_api
+    assert "/api/result-packages" in package_api
+    assert "/download" in package_api
+    assert "选择当前页" in table
+    assert "SELECTION_LIMIT = 50" in leads
+    assert "批量发送" not in leads
+    assert "正式发送" not in leads

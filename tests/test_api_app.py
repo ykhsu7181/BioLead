@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from scholarlead_agent.api.app import create_app
 from scholarlead_agent.api.dependencies import get_database
+from scholarlead_agent.api.routers import result_packages as result_package_router
 from scholarlead_agent.background_jobs import JOB_TYPE_BATCH_DRAFT
 from scholarlead_agent.database import (
     insert_email_draft,
@@ -192,6 +193,14 @@ def test_api_leads_and_tasks_read_persisted_database_rows(tmp_path: Path) -> Non
             query="single-cell cancer",
         )
         insert_pubmed_lead(connection, make_lead(), task_id="task-1")
+        insert_task(
+            connection,
+            task_id="task-2",
+            task_type="pubmed",
+            status="success",
+            query="later search",
+        )
+        insert_pubmed_lead(connection, make_lead(), task_id="task-2")
     client = make_client(db_path)
 
     leads = client.get("/api/leads")
@@ -200,10 +209,17 @@ def test_api_leads_and_tasks_read_persisted_database_rows(tmp_path: Path) -> Non
     task_leads = client.get("/api/tasks/task-1/leads")
 
     assert leads.json()["data"]["total"] == 1
+    list_item = leads.json()["data"]["items"][0]
+    assert list_item["research_topics"] == ["single-cell", "cancer"]
+    assert list_item["lead_score"] == 0
+    assert "payload" not in list_item
     assert lead.json()["data"]["lead_id"] == "lead-1"
     assert lead.json()["data"]["payload"]["pi_full_name"] == "Alice Smith"
     assert task.json()["data"]["query"] == "single-cell cancer"
     assert task_leads.json()["data"]["total"] == 1
+    assert task_leads.json()["data"]["items"][0]["lead_id"] == "lead-1"
+    assert task_leads.json()["data"]["items"][0]["source"] == "pubmed"
+    assert task_leads.json()["data"]["items"][0]["discovery_status"] == "new_record"
 
 
 def test_api_email_draft_review_and_send_boundaries(tmp_path: Path) -> None:
@@ -388,9 +404,13 @@ def test_api_pubmed_search_runs_service_and_persists_results(tmp_path: Path, mon
     assert len(leads) == 1
 
 
-def test_api_creates_result_package_from_database_task(tmp_path: Path) -> None:
+def test_api_creates_result_package_from_database_task(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
     db_path = tmp_path / "api.sqlite"
     output_dir = tmp_path / "packages"
+    monkeypatch.setattr(result_package_router, "RESULT_PACKAGE_ROOT", output_dir)
     with initialize_database(db_path) as connection:
         insert_task(
             connection,
@@ -405,14 +425,103 @@ def test_api_creates_result_package_from_database_task(tmp_path: Path) -> None:
 
     response = client.post(
         "/api/result-packages",
-        json={"task_id": "task-1", "output_dir": str(output_dir)},
+        json={"task_id": "task-1"},
     )
 
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["package_id"] == "TASK_task_1"
+    assert data["status"] == "completed"
+    assert data["download_available"] is True
+    assert "package_dir" not in data
+    assert "workbook_path" not in data
     assert data["row_counts"]["customers"] == 1
     assert (output_dir / "TASK_task_1" / "email_send_logs.csv").exists()
+
+    details = client.get("/api/result-packages/TASK_task_1")
+    download = client.get("/api/result-packages/TASK_task_1/download")
+    assert details.status_code == 200
+    assert details.json()["data"]["task_id"] == "task-1"
+    assert details.json()["data"]["row_counts"]["customers"] == 1
+    assert "summary_path" not in details.json()["data"]
+    assert download.status_code == 200
+
+
+def test_result_package_api_rejects_output_override_and_path_traversal(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        result_package_router,
+        "RESULT_PACKAGE_ROOT",
+        tmp_path / "packages",
+    )
+    client = make_client(tmp_path / "api.sqlite")
+
+    override = client.post(
+        "/api/result-packages",
+        json={"task_id": "task-1", "output_dir": str(tmp_path)},
+    )
+    traversal = client.get("/api/result-packages/%2E%2E/download")
+    malformed = client.get("/api/result-packages/not-a-package/download")
+
+    assert override.status_code == 422
+    assert override.json()["error"]["code"] == "INVALID_REQUEST"
+    assert traversal.status_code in {400, 404}
+    assert malformed.status_code == 400
+    assert malformed.json()["error"]["code"] == "INVALID_RESULT_PACKAGE_ID"
+
+
+def test_api_lead_filter_options_and_task_summary_are_product_safe(tmp_path: Path) -> None:
+    db_path = tmp_path / "api.sqlite"
+    with initialize_database(db_path) as connection:
+        insert_task(
+            connection,
+            task_id="task-summary",
+            task_type="pubmed_search",
+            status="success",
+            query="single-cell cancer",
+            started_at="2026-09-03T10:00:00",
+            finished_at="2026-09-03T10:00:01",
+            run_report_path="private/report.json",
+        )
+        insert_pubmed_lead(connection, make_lead(), task_id="task-summary")
+    client = make_client(db_path)
+
+    options = client.get("/api/leads/filter-options")
+    summary = client.get("/api/tasks/task-summary/summary")
+
+    assert options.status_code == 200
+    assert options.json()["data"]["countries"] == ["United States"]
+    assert "contact_statuses" in options.json()["data"]
+    assert summary.status_code == 200
+    assert summary.json()["data"]["lead_count"] == 1
+    assert "run_report_path" not in summary.json()["data"]
+
+
+def test_api_leads_validates_query_contract(tmp_path: Path) -> None:
+    client = make_client(tmp_path / "api.sqlite")
+
+    bad_page_size = client.get("/api/leads?page_size=10")
+    missing_task = client.get("/api/leads?scope=current")
+    bad_sort = client.get("/api/leads?sort_by=payload_json")
+
+    assert bad_page_size.status_code == 400
+    assert missing_task.status_code == 400
+    assert bad_sort.status_code == 400
+    assert bad_sort.json()["error"]["code"] == "INVALID_LEADS_QUERY"
+
+
+def test_batch_draft_api_rejects_more_than_fifty_leads(tmp_path: Path) -> None:
+    client = make_client(tmp_path / "api.sqlite")
+
+    response = client.post(
+        "/api/email-drafts/batch-generate",
+        json={"lead_ids": [f"lead-{index}" for index in range(51)], "max_items": 50},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
 
 
 def test_api_error_format_is_consistent(tmp_path: Path) -> None:

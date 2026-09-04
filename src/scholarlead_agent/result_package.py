@@ -159,7 +159,13 @@ def build_result_package_from_database_task(
     parameters = json.loads(task["parameters_json"] or "{}")
     lead_rows = fetch_all(
         connection,
-        "SELECT * FROM leads WHERE task_id = ? ORDER BY updated_at DESC, lead_id DESC",
+        """
+        SELECT l.*
+        FROM lead_discoveries AS d
+        JOIN leads AS l ON l.lead_id = d.lead_id
+        WHERE d.task_id = ?
+        ORDER BY d.discovered_at DESC, l.lead_id DESC
+        """,
         (task_id,),
     )
     lead_ids = [str(row["lead_id"]) for row in lead_rows]
@@ -705,7 +711,13 @@ def _database_customer_rows(
 def _database_paper_rows(connection, task_id: str) -> list[dict[str, Any]]:
     rows = fetch_all(
         connection,
-        "SELECT * FROM papers WHERE task_id = ? ORDER BY publication_date DESC, paper_id",
+        """
+        SELECT p.*
+        FROM paper_discoveries AS d
+        JOIN papers AS p ON p.paper_id = d.paper_id
+        WHERE d.task_id = ?
+        ORDER BY p.publication_date DESC, p.paper_id
+        """,
         (task_id,),
     )
     return [

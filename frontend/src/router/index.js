@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import AppLayout from "../layouts/AppLayout.vue";
 import DashboardView from "../views/DashboardView.vue";
+import LeadsView from "../views/LeadsView.vue";
 import LegacyWorkbenchView from "../views/LegacyWorkbenchView.vue";
 
 const router = createRouter({
@@ -14,6 +15,11 @@ const router = createRouter({
           path: "",
           name: "dashboard",
           component: DashboardView
+        },
+        {
+          path: "leads",
+          name: "leads",
+          component: LeadsView
         }
       ]
     },

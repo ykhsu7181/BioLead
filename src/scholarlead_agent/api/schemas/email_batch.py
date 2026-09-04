@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class BatchDraftRequest(BaseModel):
-    lead_ids: list[str] = Field(default_factory=list)
+    lead_ids: list[str] = Field(default_factory=list, max_length=50)
     task_id: str | None = None
     max_items: int = Field(default=10, ge=1, le=50)
 

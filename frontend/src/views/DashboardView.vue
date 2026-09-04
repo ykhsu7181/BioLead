@@ -42,7 +42,7 @@ const pendingActions = computed(() => {
       count: summary.value.manual_review_lead_count,
       icon: UserRoundCheck,
       tone: "purple",
-      to: { name: "workbench", query: { view: "leads" } }
+      to: { name: "leads", query: { manual_review: "true" } }
     }
   ].filter((action) => action.count > 0);
 });
@@ -78,7 +78,7 @@ onMounted(loadSummary);
         :icon="UsersRound"
         tone="primary"
         action-label="查看客户"
-        :action-to="{ name: 'workbench', query: { view: 'leads' } }"
+        :action-to="{ name: 'leads' }"
         :loading="loading"
       />
       <MetricSummaryCard

@@ -3,14 +3,17 @@ from pathlib import Path
 
 from scholarlead_agent.agent.loop import AgentRunResult, AgentToolExecution
 from scholarlead_agent.agent.tool_types import ToolResult
-from scholarlead_agent.database import initialize_database
+from scholarlead_agent.database import initialize_database, insert_pubmed_lead, insert_task
 from scholarlead_agent.pubmed_models import (
     PubMedAuthor,
     PubMedLead,
     PubMedPaper,
     PubMedSearchParams,
 )
-from scholarlead_agent.services.agent_result_persistence import persist_agent_run_result
+from scholarlead_agent.services.agent_result_persistence import (
+    _persisted_pubmed_lead_ids,
+    persist_agent_run_result,
+)
 
 
 @dataclass(frozen=True)
@@ -131,6 +134,17 @@ def test_persist_agent_pubmed_result_returns_only_persisted_leads(tmp_path: Path
             "SELECT lead_id FROM leads WHERE lead_id = ?",
             ("lead-1",),
         ).fetchone()
+        insert_task(
+            connection,
+            task_id="later-task",
+            task_type="pubmed_search",
+            status="success",
+        )
+        insert_pubmed_lead(connection, make_lead(), task_id="later-task")
+        original_task_ids = _persisted_pubmed_lead_ids(
+            connection,
+            "pubmed-agent-test",
+        )
 
     assert lead is not None
     assert persisted.primary_task_id == "pubmed-agent-test"
@@ -141,6 +155,7 @@ def test_persist_agent_pubmed_result_returns_only_persisted_leads(tmp_path: Path
     assert persisted.artifacts == [
         {"source": "pubmed", "kind": "run_report", "name": "pubmed_run_report.json"}
     ]
+    assert original_task_ids == ["lead-1"]
 
 
 def test_persist_agent_result_without_internal_payload_does_not_claim_leads(tmp_path: Path) -> None:
